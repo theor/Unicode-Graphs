@@ -1,105 +1,73 @@
 module App
 
 open System
-open System.Drawing
 open Elmish
 open Elmish.React
+open Fable.Core
 open Fable.React
 open Fable.React.Props
+open App.Graph
+open App.Geometry
 
 // Mutable variable to count the number of times we clicked the button
 let mutable count = 0
 
-[<Struct>]
-type Port = {
-    title: string
-    guid: Guid
-}
 
-type Pos = int*int
-
-[<Struct>]
-type Node = {
-    title: string
-    guid: Guid
-    pos: Pos
-    inputs: Port List
-    outputs: Port List
-}
-
-[<Struct>]
-type Edge = {
-    fromPort: Guid
-    toPort: Guid
-    isNodeEdge: bool
-}
-
-type Graph = {
-    nodes: Map<Guid,Node>
-    edges: Edge list
-}
-
-let emptyGraph(): Graph = {
-    nodes= Map.empty
-    edges= []
-}
-
-let newPort (title: string) : Port =
-    let guid = Guid.NewGuid() in
-    {
-        guid= guid
-        title = guid.ToString()
-    }
-let newNode () : Node =
-    let guid = Guid.NewGuid() in
-    {
-        guid = guid
-        title = guid.ToString()
-        pos = 0,0
-        inputs = []
-        outputs = []
-    }
-type GraphBuilder() =
-    let mutable g: Graph = emptyGraph()
-    member this.AddNodeEdge(fromNode:Guid, toNode:Guid) =
-        g <- {g with edges = {fromPort=fromNode; toPort=toNode; isNodeEdge = true} :: g.edges}
-    member this.AddNode(?title: string, ?pos: Pos, ?inputs: string List, ?outputs: string List) =
-       let guid = Guid.NewGuid() in
-       let n = { guid = guid
-                 title = defaultArg title (guid.ToString())
-                 pos = defaultArg pos (0,0)
-                 inputs = defaultArg inputs [] |> List.map newPort
-                 outputs = defaultArg outputs [] |> List.map newPort }
-       g <- { g with nodes = Map.add n.guid n g.nodes }
-       n.guid
-    member this.Build() = g
 
 let gb = GraphBuilder()
 let a = gb.AddNode("A Node", (1,1))
-let b = gb.AddNode("B Node", (20,20))
+let b = gb.AddNode("B Node", (15,10))
+let c = gb.AddNode("C Node", (15,1))
+let d = gb.AddNode("D Node", (25,5))
 gb.AddNodeEdge(a,b)
+gb.AddNodeEdge(a,c)
+gb.AddNodeEdge(c,b)
+gb.AddNodeEdge(c,d)
 let g: Graph = gb.Build()
 
-[<Struct>]
-type Rect =
-    { X:int
-      Y:int
-      W:int
-      H:int }
-    member this.Center = (this.X+this.W/2, this.Y+this.H/2)
-    
-    static member Create(x,y,w,h):Rect = {X=x;Y=y;W=w;H=h}
-module Rect =
-    let contains (x,y) (r:Rect) = x >= r.X && x < r.X+r.W && y >= r.Y && y < r.Y + r.H 
+let emptyChar = '.'
 
-let render (g:Graph) =
-    let w = 100
-    let h = 50
-    let margin = 1
-    let mutable b = Array.create (w*h) '.'
-    let set x y c = b.[x + y*w] <- c
+type RenderOptions = {
+    CanvasWidth: int option
+    CanvasHeight: int option
+    Margin: int }
+    with
+        static member Default: RenderOptions = { CanvasWidth=None;CanvasHeight=None;Margin=1 }
+
+let render (options:RenderOptions) (g:Graph) =
     
     let mutable nodeSizes = Map.empty<Guid,Rect>
+    let measureNode guid n =
+        let nw,nh = n.title.Length + 2 + 2*options.Margin,3
+        let x,y = n.pos
+        nodeSizes <- Map.add guid (Rect.Create(x,y,nw,nh)) nodeSizes
+    g.nodes |> Map.iter measureNode
+    let maxW = 2 + (nodeSizes |> Map.fold (fun max _ n -> Math.Max(max, (n.X + n.W))) 0)
+    let maxH = 1 + (nodeSizes |> Map.fold (fun max _ n -> Math.Max(max, (n.Y + n.H))) 0)
+    let w = Option.defaultValue maxW options.CanvasWidth
+    let h = Option.defaultValue maxH options.CanvasHeight
+    JS.console.log(Map.toArray nodeSizes)
+    
+    let mutable b = Array.create (w*h) emptyChar
+    let set x y c = b.[x + y*w] <- c
+    
+    let renderNode guid n =
+        let r = Map.find guid nodeSizes
+        for j in 0..r.H-1 do
+        for i in 0..r.W-1 do
+            let c = match (i,j) with
+                    | 0,0 -> '\u250c' // top left
+                    | (0, _) when j = r.H - 1 -> '\u2514' // bottom left
+                    | _,0 when i = r.W-1 -> '\u2510' // top right
+                    | _,_ when i = r.W-1 && j = r.H-1 -> '\u2518' // bottom right
+                    | _,_ when j = 0 || j = r.H-1 -> '\u2500' // top or bottom
+                    | _,_ when i = 0 || i = r.W-1 -> '\u2502'  // left or right
+                    | _ -> '.'
+            set (r.X+i)(r.Y+j) (if i = 0 || i = (r.W-1) || j = (r.H - 1) || j = 0 then c else ' ')
+        for i in 0.. n.title.Length-1 do
+            set (r.X+1+i+options.Margin) (r.Y+1) n.title.[i]
+        ()
+        
     
     let renderEdge (e:Edge) =
         if not e.isNodeEdge then failwith "NOT NODE EDGE"
@@ -110,37 +78,25 @@ let render (g:Graph) =
         while i <> rtx || j <> rty do
             if not (Rect.contains (i,j) rf) && not (Rect.contains (i,j) rt)
             then set i j 'O'
-            if i <> rtx
-            then i <- i+1
-            else j <- j+1
-            
+            let dx,dy = (rtx-i),(rty-j)
+            let sx,sy = Math.Sign dx, Math.Sign dy
+            if Math.Abs(dx) > Math.Abs(dy)
+            then
+                i <- i+sx
+            else
+                j <- j+sy
             ()
-    let renderNode guid n =
-        let nw,nh = n.title.Length + 2 + 2*margin,3
-        let x,y = n.pos
-        nodeSizes <- Map.add guid (Rect.Create(x,y,nw,nh)) nodeSizes 
-        for i in 0..nw-1 do
-        for j in 0..nh-1 do
-            let c = match (i,j) with
-                    | 0,0 -> '\u250c'
-                    | (0, _) when j = nh - 1 -> '\u2514'
-                    
-                    | _,0 when i = nw-1 -> '\u2510'
-                    | _,_ when i = nw-1 && j = nh-1 -> '\u2518'
-                    | _,_ when j = 0 || j = nh-1 -> '\u2500'
-                    | _,_ when i = 0 || i = nw-1 -> '\u2502'
-                    | _ -> '.'
-            set (x+i)(y+j) (if i = 0 || i = (nw-1) || j = (nh - 1) || j = 0 then c else ' ')
-        for i in 0.. n.title.Length-1 do
-            set (x+1+i+margin) (y+1) n.title.[i]
-        ()
     
+//    let isEmptyChar c = c = emptyChar
     g.nodes |> Map.iter renderNode
     g.edges |> List.iter renderEdge
     seq {
         for line in Seq.chunkBySize w b do
+//            let firstIsEmpty = isEmptyChar line.[0]
+//            let mutable i = 0
+//            while i < line.Length do
+//                match line |> Seq.skip i |> Seq.tryFindIndex (fun c -> )
             yield pre [] [str <| String(line)]
-        
     }
 //    b |> Seq.chunkBySize w |> Seq.map (fun line -> String(line)) |> String.concat "\\A"
 
@@ -172,11 +128,10 @@ let update (msg:Msg) (model:Model) =
 let view (model:Model) dispatch =
 
   div []
-      [ p [] [ str <| g.ToString() ]
-        p [ClassName "graph-output"] (render g)// [  |> render |> str ]
-        button [ OnClick (fun _ -> dispatch Increment) ] [ str "+" ]
-        div [] [ str (string model) ]
-        button [ OnClick (fun _ -> dispatch Decrement) ] [ str "-" ] ]
+      [ div [ClassName "graph-output"; OnMouseMove (fun e -> JS.console.log(e.clientX, e.y, e))] (render RenderOptions.Default g) ]
+//        button [ OnClick (fun _ -> dispatch Increment) ] [ str "+" ]
+//        div [] [ str (string model) ]
+//        button [ OnClick (fun _ -> dispatch Decrement) ] [ str "-" ] ]
 
 printfn "asd"
 // App
