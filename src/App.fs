@@ -1,6 +1,8 @@
 module App
 
 open System
+open System.Text
+open Browser.Types
 open Elmish
 open Elmish.React
 open Fable.Core
@@ -9,50 +11,57 @@ open Fable.React.Props
 open App.Graph
 open App.Geometry
 
-// Mutable variable to count the number of times we clicked the button
-let mutable count = 0
 
-
-
-let gb = GraphBuilder()
-let a = gb.AddNode("A Node", (1,1))
-let b = gb.AddNode("B Node", (15,10))
-let c = gb.AddNode("C Node", (15,1))
-let d = gb.AddNode("D Node", (25,5))
-gb.AddNodeEdge(a,b)
-gb.AddNodeEdge(a,c)
-gb.AddNodeEdge(c,b)
-gb.AddNodeEdge(c,d)
-let g: Graph = gb.Build()
-
-let emptyChar = '.'
-
+[<Struct>]
 type RenderOptions = {
     CanvasWidth: int option
     CanvasHeight: int option
+    ActualCanvasWidth : int
+    ActualCanvasHeight : int
     Margin: int }
     with
-        static member Default: RenderOptions = { CanvasWidth=None;CanvasHeight=None;Margin=1 }
+        static member Default: RenderOptions = { CanvasWidth=None;CanvasHeight=None;Margin=1; ActualCanvasWidth=1; ActualCanvasHeight=1 }
+type Model = {
+    graph: Graph
+    options: RenderOptions
+    nodeSizes: Map<Id,Rect>
+}
+type Msg =
+| Move of Id * Pos
+| Layout
+// Mutable variable to count the number of times we clicked the button
 
-let render (options:RenderOptions) (g:Graph) =
-    
-    let mutable nodeSizes = Map.empty<Guid,Rect>
+
+
+
+let emptyChar = ' '
+
+
+let layout (model:Model) =
+    let mutable nodeSizes = Map.empty<Id,Rect>
     let measureNode guid n =
-        let nw,nh = n.title.Length + 2 + 2*options.Margin,3
+        let nw,nh = n.title.Length + 2 + 2*model.options.Margin,3
         let x,y = n.pos
         nodeSizes <- Map.add guid (Rect.Create(x,y,nw,nh)) nodeSizes
-    g.nodes |> Map.iter measureNode
+    model.graph.nodes |> Map.iter measureNode
     let maxW = 2 + (nodeSizes |> Map.fold (fun max _ n -> Math.Max(max, (n.X + n.W))) 0)
     let maxH = 1 + (nodeSizes |> Map.fold (fun max _ n -> Math.Max(max, (n.Y + n.H))) 0)
-    let w = Option.defaultValue maxW options.CanvasWidth
-    let h = Option.defaultValue maxH options.CanvasHeight
-    JS.console.log(Map.toArray nodeSizes)
+    let w = Option.defaultValue maxW model.options.CanvasWidth
+    let h = Option.defaultValue maxH model.options.CanvasHeight
+    { model with
+        options = {model.options with ActualCanvasWidth=w; ActualCanvasHeight=h}
+        nodeSizes = nodeSizes}
+let render (model:Model) =
+    let options = model.options
+    let g = model.graph
+
+    JS.console.log(Map.toArray model.nodeSizes)
     
-    let mutable b = Array.create (w*h) emptyChar
-    let set x y c = b.[x + y*w] <- c
+    let mutable b = Array.create (options.ActualCanvasWidth*options.ActualCanvasHeight) (emptyChar, Id.Default)
+    let set x y c (id:Id) = b.[x + y*options.ActualCanvasWidth] <- (c,id)
     
     let renderNode guid n =
-        let r = Map.find guid nodeSizes
+        let r = Map.find guid model.nodeSizes
         for j in 0..r.H-1 do
         for i in 0..r.W-1 do
             let c = match (i,j) with
@@ -63,21 +72,21 @@ let render (options:RenderOptions) (g:Graph) =
                     | _,_ when j = 0 || j = r.H-1 -> '\u2500' // top or bottom
                     | _,_ when i = 0 || i = r.W-1 -> '\u2502'  // left or right
                     | _ -> '.'
-            set (r.X+i)(r.Y+j) (if i = 0 || i = (r.W-1) || j = (r.H - 1) || j = 0 then c else ' ')
+            set (r.X+i)(r.Y+j) (if i = 0 || i = (r.W-1) || j = (r.H - 1) || j = 0 then c else ' ') guid
         for i in 0.. n.title.Length-1 do
-            set (r.X+1+i+options.Margin) (r.Y+1) n.title.[i]
+            set (r.X+1+i+options.Margin) (r.Y+1) n.title.[i] guid
         ()
         
     
     let renderEdge (e:Edge) =
         if not e.isNodeEdge then failwith "NOT NODE EDGE"
-        let rf = nodeSizes.Item e.fromPort
-        let rt = nodeSizes.Item e.toPort
+        let rf = model.nodeSizes.Item e.fromPort
+        let rt = model.nodeSizes.Item e.toPort
         let mutable (i,j) = rf.Center in
         let rtx,rty = rt.Center
         while i <> rtx || j <> rty do
             if not (Rect.contains (i,j) rf) && not (Rect.contains (i,j) rt)
-            then set i j 'O'
+            then set i j 'O' EdgeId
             let dx,dy = (rtx-i),(rty-j)
             let sx,sy = Math.Sign dx, Math.Sign dy
             if Math.Abs(dx) > Math.Abs(dy)
@@ -91,12 +100,29 @@ let render (options:RenderOptions) (g:Graph) =
     g.nodes |> Map.iter renderNode
     g.edges |> List.iter renderEdge
     seq {
-        for line in Seq.chunkBySize w b do
+        for line in Seq.chunkBySize options.ActualCanvasWidth b do
 //            let firstIsEmpty = isEmptyChar line.[0]
-//            let mutable i = 0
-//            while i < line.Length do
+            let mutable (c,id) = line.[0]
+            let mutable i = 1
+            let mutable sb = StringBuilder(options.ActualCanvasWidth)
+            sb <- sb.Append c
+            
+            let lineContent = seq {
+            
+                while i < line.Length do
+                    let c,nextId = line.[i]
+                    if id <> nextId then
+                        yield span [ Data("nid", id.Value) ] [str <| sb.ToString()]
+                        sb <- sb.Clear()
+                    sb <- sb.Append c
+                    id <- nextId
+                    i <- i + 1
+                if sb.Length > 0 then 
+                    yield span [ Data("nid", id.Value) ] [str <| sb.ToString()]
+            }
+            yield pre [] lineContent
 //                match line |> Seq.skip i |> Seq.tryFindIndex (fun c -> )
-            yield pre [] [str <| String(line)]
+//            yield pre [] [str <| String(line)]
     }
 //    b |> Seq.chunkBySize w |> Seq.map (fun line -> String(line)) |> String.concat "\\A"
 
@@ -108,27 +134,86 @@ let render (options:RenderOptions) (g:Graph) =
 //    count <- count + 1
 //    myButton.innerText <- sprintf "You clicked: %i time(s)" count
 
-type Model = int
 
-type Msg =
-| Increment
-| Decrement
-
-let init() : Model = 0
+let init() : Model =
+    let gb = GraphBuilder()
+    let a = gb.AddNode("A Node", (1,1))
+    let b = gb.AddNode("B Node", (15,10))
+    let c = gb.AddNode("C Node", (15,1))
+    let d = gb.AddNode("D Node", (25,5))
+    gb.AddNodeEdge(a,b)
+    gb.AddNodeEdge(a,c)
+    gb.AddNodeEdge(c,b)
+    gb.AddNodeEdge(c,d)
+    { graph=gb.Build()
+      options=RenderOptions.Default
+      nodeSizes = Map.empty } |> layout
 
 // UPDATE
 
 let update (msg:Msg) (model:Model) =
     match msg with
-    | Increment -> model + 1
-    | Decrement -> model - 1
+    | Layout -> layout model
+    | Move(n, newPos) -> {model with graph = {model.graph with nodes = Map.change n (fun x -> { x.Value with pos = newPos } |> Some) model.graph.nodes}} |> layout
+    | _ -> model
+//    | Increment -> model + 1
+//    | Decrement -> model - 1
 
 // VIEW (rendered with React)
+
+let mutable selectedNode: Node option = None
+let mutable startPos: Pos option = None
+[<RequireQualifiedAccess>]
+type MouseState = None | Down | Move | Up
+let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:MouseEvent) =
+    let graphElt = e.currentTarget :?> HTMLElement
+    let getId (): Id option =
+        let elem = e.target :?> Browser.Types.HTMLElement
+        if not <| JsInterop.isNullOrUndefined elem then
+            match elem.dataset.Item "nid" with
+            | "" | null -> None
+            | s when JsInterop.isNullOrUndefined s -> None
+            | s -> UInt32.Parse s |> Id |> Some
+        else None
+    let getNode() : Node option =
+        getId() |> Option.bind (fun id -> Map.tryFind id (model.graph.nodes))
+    let getCurrentCoords(): Pos =
+         let rect = graphElt.getBoundingClientRect()
+         float model.options.ActualCanvasWidth * (e.clientX - rect.left) / rect.width |> int32,
+         float model.options.ActualCanvasHeight * (e.clientY - rect.top) / rect.height |> int32 
+    match state with
+    | MouseState.Down ->
+        selectedNode <- getNode()
+        startPos <- getCurrentCoords() |> Some
+        printfn "Selected: %A cur pos: %A" selectedNode startPos
+    | MouseState.Up ->
+        selectedNode <- None
+        startPos <- None
+    | MouseState.Move when startPos.IsNone -> ()
+    | MouseState.Move ->
+         
+         let sx,sy = startPos.Value;
+         let x,y = getCurrentCoords()
+         let dx,dy = x-sx, y-sy
+//         JS.console.log (getCurrentCoords())
+//         JS.console.log(e.clientX - graphElt.clientLeft, e.clientY - graphElt.clientTop, graphElt.clientWidth, graphElt.clientHeight)
+         match selectedNode with
+         | None -> ()
+         | Some n ->
+             let nx,ny = n.pos
+             dispatch <| Move(n.guid, (nx + dx, ny + dy))
+    | _ -> failwith "todo"
+//    JS.console.log("button",e.buttons)
+   
 
 let view (model:Model) dispatch =
 
   div []
-      [ div [ClassName "graph-output"; OnMouseMove (fun e -> JS.console.log(e.clientX, e.y, e))] (render RenderOptions.Default g) ]
+      [ div [ClassName "graph-output"
+             OnMouseMove (onMouseMove dispatch model MouseState.Move)
+             OnMouseDown (onMouseMove dispatch model MouseState.Down)
+             OnMouseUp (onMouseMove dispatch model MouseState.Up) ]
+             (render model) ]
 //        button [ OnClick (fun _ -> dispatch Increment) ] [ str "+" ]
 //        div [] [ str (string model) ]
 //        button [ OnClick (fun _ -> dispatch Decrement) ] [ str "-" ] ]

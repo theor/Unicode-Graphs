@@ -3,16 +3,27 @@ module App.Graph
 open System
 open App.Geometry
 
+type Id = Id of uint
+with
+    static member Default = Id 0u
+    member this.Value = match this with Id(i) -> i
+// skip 1 as it's the reserved edge id
+let EdgeId = Id 1u
+let mutable next = 1u
+let nextId() =
+    next <- next + 1u
+    Id next
+
 [<Struct>]
 type Port = {
     title: string
-    guid: Guid
+    guid: Id
 }
 
 [<Struct>]
 type Node = {
     title: string
-    guid: Guid
+    guid: Id
     pos: Pos
     inputs: Port List
     outputs: Port List
@@ -20,13 +31,13 @@ type Node = {
 
 [<Struct>]
 type Edge = {
-    fromPort: Guid
-    toPort: Guid
+    fromPort: Id
+    toPort: Id
     isNodeEdge: bool
 }
 
 type Graph = {
-    nodes: Map<Guid,Node>
+    nodes: Map<Id,Node>
     edges: Edge list
 }
 
@@ -36,13 +47,13 @@ let emptyGraph(): Graph = {
 }
 
 let newPort (title: string) : Port =
-    let guid = Guid.NewGuid() in
+    let guid = nextId() in
     {
         guid= guid
         title = guid.ToString()
     }
 let newNode () : Node =
-    let guid = Guid.NewGuid() in
+    let guid = nextId() in
     {
         guid = guid
         title = guid.ToString()
@@ -52,10 +63,10 @@ let newNode () : Node =
     }
 type GraphBuilder() =
     let mutable g: Graph = emptyGraph()
-    member this.AddNodeEdge(fromNode:Guid, toNode:Guid) =
+    member this.AddNodeEdge(fromNode:Id, toNode:Id) =
         g <- {g with edges = {fromPort=fromNode; toPort=toNode; isNodeEdge = true} :: g.edges}
     member this.AddNode(?title: string, ?pos: Pos, ?inputs: string List, ?outputs: string List) =
-       let guid = Guid.NewGuid() in
+       let guid = nextId() in
        let n = { guid = guid
                  title = defaultArg title (guid.ToString())
                  pos = defaultArg pos (0,0)
