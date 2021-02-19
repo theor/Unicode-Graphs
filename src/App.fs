@@ -6,6 +6,8 @@ open Browser.Types
 open Elmish
 open Elmish.React
 open Fable.Core
+open Fable.Import
+open Fable.Import
 open Fable.React
 open Fable.React.Props
 open App.Graph
@@ -85,23 +87,29 @@ let render (model:Model) =
         let mutable (i,j) = rf.Center in
         let rtx,rty = rt.Center
         while i <> rtx || j <> rty do
-            if not (Rect.contains (i,j) rf) && not (Rect.contains (i,j) rt)
-            then set i j 'O' EdgeId
+            
             let dx,dy = (rtx-i),(rty-j)
             let sx,sy = Math.Sign dx, Math.Sign dy
-            if Math.Abs(dx) > Math.Abs(dy)
+            
+            if not (Rect.contains (i,j) rf) && not (Rect.contains (i,j) rt)
             then
-                i <- i+sx
-            else
-                j <- j+sy
+                let c = match sx,sy with
+                         | 1, 1 | -1, -1 -> '\\'// '\u22F1'
+                         | 1, -1 | -1, 1 -> '/'// '\u22F0'
+                         | 0, -1 | 0, 1 -> '|'//'\u22ee'
+                         | 1, 0 | -1, 0 -> '\u2500'// '\u22ef'
+                         | _ -> 'o'
+                set i j c EdgeId
+            
+            
+            if dx <> 0 then i <- i+sx
+            if dy <> 0 then j <- j+sy
             ()
     
-//    let isEmptyChar c = c = emptyChar
     g.nodes |> Map.iter renderNode
     g.edges |> List.iter renderEdge
     seq {
         for line in Seq.chunkBySize options.ActualCanvasWidth b do
-//            let firstIsEmpty = isEmptyChar line.[0]
             let mutable (c,id) = line.[0]
             let mutable i = 1
             let mutable sb = StringBuilder(options.ActualCanvasWidth)
@@ -121,18 +129,8 @@ let render (model:Model) =
                     yield span [ Data("nid", id.Value) ] [str <| sb.ToString()]
             }
             yield pre [] lineContent
-//                match line |> Seq.skip i |> Seq.tryFindIndex (fun c -> )
-//            yield pre [] [str <| String(line)]
     }
-//    b |> Seq.chunkBySize w |> Seq.map (fun line -> String(line)) |> String.concat "\\A"
 
-//// Get a reference to our button and cast the Element to an HTMLButtonElement
-//let myButton = document.querySelector(".my-button") :?> Browser.Types.HTMLButtonElement
-//
-//// Register our listener
-//myButton.onclick <- fun _ ->
-//    count <- count + 1
-//    myButton.innerText <- sprintf "You clicked: %i time(s)" count
 
 
 let init() : Model =
@@ -156,8 +154,6 @@ let update (msg:Msg) (model:Model) =
     | Layout -> layout model
     | Move(n, newPos) -> {model with graph = {model.graph with nodes = Map.change n (fun x -> { x.Value with pos = newPos } |> Some) model.graph.nodes}} |> layout
     | _ -> model
-//    | Increment -> model + 1
-//    | Decrement -> model - 1
 
 // VIEW (rendered with React)
 
@@ -207,13 +203,19 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
    
 
 let view (model:Model) dispatch =
-
+  let doCopy () =
+      let text = Browser.Dom.document.getElementById("graph-output").innerText
+      Browser.Navigator.navigator.
+      match Browser.Navigator.navigator.clipboard with
+      | None -> JS.console.log(text)
+      | Some clipboard -> clipboard.writeText(text) |> ignore
   div []
-      [ div [ClassName "graph-output"
+      [ div [HTMLAttr.Id "graph-output"; ClassName "graph-output"
              OnMouseMove (onMouseMove dispatch model MouseState.Move)
              OnMouseDown (onMouseMove dispatch model MouseState.Down)
              OnMouseUp (onMouseMove dispatch model MouseState.Up) ]
-             (render model) ]
+             (render model)
+        button [ OnClick (fun _ -> doCopy ()) ] [ str "Copy" ]]
 //        button [ OnClick (fun _ -> dispatch Increment) ] [ str "+" ]
 //        div [] [ str (string model) ]
 //        button [ OnClick (fun _ -> dispatch Decrement) ] [ str "-" ] ]
