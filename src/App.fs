@@ -1,6 +1,7 @@
 module App
 
 open System
+open System.Drawing
 open Elmish
 open Elmish.React
 open Fable.React
@@ -30,15 +31,16 @@ type Node = {
 type Edge = {
     fromPort: Guid
     toPort: Guid
+    isNodeEdge: bool
 }
 
 type Graph = {
-    nodes: Node list
+    nodes: Map<Guid,Node>
     edges: Edge list
 }
 
 let emptyGraph(): Graph = {
-    nodes= []
+    nodes= Map.empty
     edges= []
 }
 
@@ -59,6 +61,8 @@ let newNode () : Node =
     }
 type GraphBuilder() =
     let mutable g: Graph = emptyGraph()
+    member this.AddNodeEdge(fromNode:Guid, toNode:Guid) =
+        g <- {g with edges = {fromPort=fromNode; toPort=toNode; isNodeEdge = true} :: g.edges}
     member this.AddNode(?title: string, ?pos: Pos, ?inputs: string List, ?outputs: string List) =
        let guid = Guid.NewGuid() in
        let n = { guid = guid
@@ -66,32 +70,76 @@ type GraphBuilder() =
                  pos = defaultArg pos (0,0)
                  inputs = defaultArg inputs [] |> List.map newPort
                  outputs = defaultArg outputs [] |> List.map newPort }
-       g <- { g with nodes =  n :: g.nodes }
-       this
+       g <- { g with nodes = Map.add n.guid n g.nodes }
+       n.guid
     member this.Build() = g
 
-let gb = GraphBuilder().AddNode("A", (1,1)).AddNode("B", (20, 20))
+let gb = GraphBuilder()
+let a = gb.AddNode("A Node", (1,1))
+let b = gb.AddNode("B Node", (20,20))
+gb.AddNodeEdge(a,b)
 let g: Graph = gb.Build()
 
+[<Struct>]
+type Rect =
+    { X:int
+      Y:int
+      W:int
+      H:int }
+    member this.Center = (this.X+this.W/2, this.Y+this.H/2)
+    
+    static member Create(x,y,w,h):Rect = {X=x;Y=y;W=w;H=h}
+module Rect =
+    let contains (x,y) (r:Rect) = x >= r.X && x < r.X+r.W && y >= r.Y && y < r.Y + r.H 
 
 let render (g:Graph) =
     let w = 100
     let h = 50
-    let mutable b = Array.create (w*h) '_'
+    let margin = 1
+    let mutable b = Array.create (w*h) '.'
     let set x y c = b.[x + y*w] <- c
     
-    let renderNode n =
-        let nw,nh = 6,4
+    let mutable nodeSizes = Map.empty<Guid,Rect>
+    
+    let renderEdge (e:Edge) =
+        if not e.isNodeEdge then failwith "NOT NODE EDGE"
+        let rf = nodeSizes.Item e.fromPort
+        let rt = nodeSizes.Item e.toPort
+        let mutable (i,j) = rf.Center in
+        let rtx,rty = rt.Center
+        while i <> rtx || j <> rty do
+            if not (Rect.contains (i,j) rf) && not (Rect.contains (i,j) rt)
+            then set i j 'O'
+            if i <> rtx
+            then i <- i+1
+            else j <- j+1
+            
+            ()
+    let renderNode guid n =
+        let nw,nh = n.title.Length + 2 + 2*margin,3
         let x,y = n.pos
+        nodeSizes <- Map.add guid (Rect.Create(x,y,nw,nh)) nodeSizes 
         for i in 0..nw-1 do
         for j in 0..nh-1 do
-            set (x+i)(y+j) (if i = 0 || i = (nw-1) || j = (nh - 1) || j = 0 then 'X' else '.')
+            let c = match (i,j) with
+                    | 0,0 -> '\u250c'
+                    | (0, _) when j = nh - 1 -> '\u2514'
+                    
+                    | _,0 when i = nw-1 -> '\u2510'
+                    | _,_ when i = nw-1 && j = nh-1 -> '\u2518'
+                    | _,_ when j = 0 || j = nh-1 -> '\u2500'
+                    | _,_ when i = 0 || i = nw-1 -> '\u2502'
+                    | _ -> '.'
+            set (x+i)(y+j) (if i = 0 || i = (nw-1) || j = (nh - 1) || j = 0 then c else ' ')
+        for i in 0.. n.title.Length-1 do
+            set (x+1+i+margin) (y+1) n.title.[i]
         ()
     
-    g.nodes |> Seq.iter renderNode
+    g.nodes |> Map.iter renderNode
+    g.edges |> List.iter renderEdge
     seq {
         for line in Seq.chunkBySize w b do
-            yield span [] [str <| String(line)]
+            yield pre [] [str <| String(line)]
         
     }
 //    b |> Seq.chunkBySize w |> Seq.map (fun line -> String(line)) |> String.concat "\\A"
