@@ -18,4 +18,5 @@ type Model = {
 }
 type Msg =
 | Move of Id * Pos
+| AddNode of Id * string
 | Layout

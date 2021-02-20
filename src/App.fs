@@ -27,6 +27,10 @@ let update (msg:Msg) (model:Model) =
     match msg with
     | Layout -> layout model
     | Move(n, newPos) -> {model with graph = {model.graph with nodes = Map.change n (fun x -> { x.Value with pos = newPos } |> Some) model.graph.nodes}} |> layout
+    | AddNode(id, title) ->
+        let gb = GraphBuilder(model.graph)
+        ignore <| gb.AddNode(title=title, id=id)
+        {model with graph = gb.Build() } |> layout
     | _ -> model
 
 // App

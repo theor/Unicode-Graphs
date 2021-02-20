@@ -61,12 +61,13 @@ let newNode () : Node =
         inputs = []
         outputs = []
     }
-type GraphBuilder() =
-    let mutable g: Graph = emptyGraph()
+type GraphBuilder(g0:Graph) =
+    let mutable g: Graph = g0
+    new() = GraphBuilder(emptyGraph()) 
     member this.AddNodeEdge(fromNode:Id, toNode:Id) =
         g <- {g with edges = {fromPort=fromNode; toPort=toNode; isNodeEdge = true} :: g.edges}
-    member this.AddNode(?title: string, ?pos: Pos, ?inputs: string List, ?outputs: string List) =
-       let guid = nextId() in
+    member this.AddNode(?title: string, ?pos: Pos, ?inputs: string List, ?outputs: string List, ?id:Id) =
+       let guid = Option.defaultWith nextId id in
        let n = { guid = guid
                  title = defaultArg title (guid.ToString())
                  pos = defaultArg pos (0,0)

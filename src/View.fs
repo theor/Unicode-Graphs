@@ -16,10 +16,11 @@ let view (model:Model) dispatch =
       section [ Class "section" ] [
         div [ Class "container" ] 
           (seq {
-            yield h1 [ Class "title" ] [ str "Hello World" ]
-            yield! (GraphRender.render dispatch model)
+            yield p [Class "buttons"] [
+              button [Class "button"; OnClick (fun _ -> dispatch (AddNode(Graph.nextId(), "New")))] [str "New Node"]
+            ]
+            yield! GraphRender.render dispatch model
           })
-        
         div [ Class "container" ] [
           button [ClassName "button is-primary"
                   OnClick (fun _ -> doCopy())] [str "Copy"]
