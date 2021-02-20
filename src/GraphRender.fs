@@ -11,7 +11,6 @@ open App.Types
 
 let emptyChar = ' '
 
-
 let layout (model:Model) =
     let mutable nodeSizes = Map.empty<Id,Rect>
     let measureNode guid n =
@@ -28,11 +27,12 @@ let layout (model:Model) =
         nodeSizes = nodeSizes}
     
 
-let mutable startPos: Pos option = None
 [<RequireQualifiedAccess>]
 type MouseState = None | Down | Move | Up
+
 let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:MouseEvent) =
     let graphElt = e.currentTarget :?> HTMLElement
+    
     let getId (): Id option =
         let elem = e.target :?> Browser.Types.HTMLElement
         if not <| JsInterop.isNullOrUndefined elem then
@@ -41,24 +41,23 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
             | s when JsInterop.isNullOrUndefined s -> None
             | s -> UInt32.Parse s |> Id |> Some
         else None
+        
     let getNode() : Node option =
         getId() |> Option.bind (fun id -> Map.tryFind id (model.graph.nodes))
+        
     let getCurrentCoords(): Pos =
          let rect = graphElt.getBoundingClientRect()
          float model.options.ActualCanvasWidth * (e.clientX - rect.left) / rect.width |> int32,
-         float model.options.ActualCanvasHeight * (e.clientY - rect.top) / rect.height |> int32 
+         float model.options.ActualCanvasHeight * (e.clientY - rect.top) / rect.height |> int32
+         
     match state with
     | MouseState.Down ->
         let newSelectedNode = getNode()
-        if newSelectedNode <> model.selectedNode then dispatch (SelectNode newSelectedNode)
-        startPos <- getCurrentCoords() |> Some
-        printfn "Selected: %A cur pos: %A" model.selectedNode startPos
-    | MouseState.Up ->
-        startPos <- None
-    | MouseState.Move when startPos.IsNone -> ()
+        if newSelectedNode <> model.selectedNode then dispatch (SelectNode(newSelectedNode, Some <| getCurrentCoords()))
+    | MouseState.Up -> dispatch <| SelectNode(model.selectedNode, None)
+    | MouseState.Move when model.startPos.IsNone -> ()
     | MouseState.Move ->
-         
-         let sx,sy = startPos.Value;
+         let sx,sy = model.startPos.Value;
          let x,y = getCurrentCoords()
          let dx,dy = x-sx, y-sy
 //         JS.console.log(e.clientX - graphElt.clientLeft, e.clientY - graphElt.clientTop, graphElt.clientWidth, graphElt.clientHeight)
@@ -68,15 +67,11 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
              let nx,ny = n.pos
              dispatch <| Move(n.guid, (nx + dx, ny + dy))
     | _ -> failwith "todo"
-//    JS.console.log("button",e.buttons)
-   
     
 let render dispatch (model:Model) =
     let options = model.options
     let g = model.graph
 
-//    JS.console.log(Map.toArray model.nodeSizes)
-    
     let mutable b = Array.create (options.ActualCanvasWidth*options.ActualCanvasHeight) (emptyChar, Id.Default)
     let set x y c (id:Id) = b.[x + y*options.ActualCanvasWidth] <- (c,id)
     
@@ -96,7 +91,6 @@ let render dispatch (model:Model) =
         for i in 0.. n.title.Length-1 do
             set (r.X+1+i+options.Margin) (r.Y+1) n.title.[i] guid
         ()
-        
     
     let renderEdge (e:Edge) =
         if not e.isNodeEdge then failwith "NOT NODE EDGE"
@@ -126,6 +120,7 @@ let render dispatch (model:Model) =
     
     g.nodes |> Map.iter renderNode
     g.edges |> List.iter renderEdge
+    
     seq {
         yield div [HTMLAttr.Id "graph-output"; ClassName "graph-output"
                    OnMouseMove (onMouseMove dispatch model MouseState.Move)
