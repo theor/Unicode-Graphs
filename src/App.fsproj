@@ -5,10 +5,19 @@
   <ItemGroup>
     <Compile Include="Geometry.fs" />
     <Compile Include="Graph.fs" />
+    <Compile Include="Types.fs" />
+    <Compile Include="GraphRender.fs" />
+    <Compile Include="View.fs" />
     <Compile Include="App.fs" />
+    <Content Include="..\package.json">
+      <Link>package.json</Link>
+    </Content>
+    <Content Include="index.html" />
+    <Content Include="scss\main.scss" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Fable.Browser.Dom" Version="2.2.0" />
+    <PackageReference Include="Fable.Browser.Navigator" Version="1.1.0" />
     <PackageReference Include="Fable.Core" Version="3.2.3" />
     <PackageReference Include="Fable.Elmish.React" Version="4.0.0-alpha-1" />
   </ItemGroup>

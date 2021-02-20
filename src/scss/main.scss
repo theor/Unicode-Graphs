@@ -1,0 +1,31 @@
+@charset "utf-8";
+@import "../../node_modules/bulma/bulma.sass";
+
+.graph-output {
+  font-family: 'Courier New', monospace;
+  white-space: nowrap;
+  display: inline-block;
+  & > pre {
+    margin: 0;
+    user-select: none;
+  }
+}
+.graph-output pre {
+  padding: 0;
+  line-height: 100%;
+  overflow: hidden;
+}
+#hidden-output {
+  width:5px;
+  height:5px;
+  user-select: all;
+  margin-top: 5px;
+  font-family: 'Courier New', monospace;
+  white-space: nowrap;
+  & > pre {
+    padding: 0;
+    line-height: 100%;
+    overflow: hidden;
+    
+  }
+}
