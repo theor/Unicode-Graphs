@@ -20,6 +20,7 @@ let view (model:Model) dispatch =
               button [Class "button"; OnClick (fun _ -> dispatch (AddNode(Graph.nextId(), "New")))] [str "New Node"]
             ]
             yield! GraphRender.render dispatch model
+            yield! GraphRender.render dispatch (GraphRender.layout {model with options = {model.options with NodeBorders = not model.options.NodeBorders} })
           })
         div [ Class "container" ] [
           button [ClassName "button is-primary"

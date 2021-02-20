@@ -9,19 +9,21 @@ open App.Geometry
 open App.Graph
 open App.Types
 
-let emptyChar = ' '
+let emptyChar = '.'
 
 let layout (model:Model) =
     let mutable nodeSizes = Map.empty<Id,Rect>
     let measureNode guid n =
-        let nw,nh = n.title.Length + 2 + 2*model.options.Margin,3
+        let nw,nh = n.title.Length + (if model.options.NodeBorders then 2 + 2*model.options.Margin else 0),
+                    if model.options.NodeBorders then 3 else 1
         let x,y = n.pos
         nodeSizes <- Map.add guid (Rect.Create(x,y,nw,nh)) nodeSizes
     model.graph.nodes |> Map.iter measureNode
     let maxW = 2 + (nodeSizes |> Map.fold (fun max _ n -> Math.Max(max, (n.X + n.W))) 0)
-    let maxH = 1 + (nodeSizes |> Map.fold (fun max _ n -> Math.Max(max, (n.Y + n.H))) 0)
+    let maxH = 2 + (nodeSizes |> Map.fold (fun max _ n -> Math.Max(max, (n.Y + n.H))) 0)
     let w = Option.defaultValue maxW model.options.CanvasWidth
     let h = Option.defaultValue maxH model.options.CanvasHeight
+    JS.console.log(nodeSizes |> Map.toSeq |> Seq.map (fun (_,x) -> x) |> Seq.toArray, nodeSizes |> Map.toArray |> Array.map (fun (a,b) -> b.Center))
     { model with
         options = {model.options with ActualCanvasWidth=w; ActualCanvasHeight=h}
         nodeSizes = nodeSizes}
@@ -53,14 +55,16 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
     match state with
     | MouseState.Down ->
         let newSelectedNode = getNode()
-        if newSelectedNode <> model.selectedNode then dispatch (SelectNode(newSelectedNode, Some <| getCurrentCoords()))
+        let newPos = getCurrentCoords()
+//        if newSelectedNode <> model.selectedNode || Some(newPos) <> model.startPos then
+        dispatch (SelectNode(newSelectedNode, Some newPos))
     | MouseState.Up -> dispatch <| SelectNode(model.selectedNode, None)
-    | MouseState.Move when model.startPos.IsNone -> ()
+    | MouseState.Move when model.startPos.IsNone -> ()// printfn "skip"; ()
     | MouseState.Move ->
          let sx,sy = model.startPos.Value;
          let x,y = getCurrentCoords()
          let dx,dy = x-sx, y-sy
-//         JS.console.log(e.clientX - graphElt.clientLeft, e.clientY - graphElt.clientTop, graphElt.clientWidth, graphElt.clientHeight)
+         JS.console.log(e.clientX - graphElt.clientLeft, e.clientY - graphElt.clientTop, graphElt.clientWidth, graphElt.clientHeight)
          match model.selectedNode with
          | None -> ()
          | Some n ->
@@ -77,19 +81,22 @@ let render dispatch (model:Model) =
     
     let renderNode guid n =
         let r = Map.find guid model.nodeSizes
-        for j in 0..r.H-1 do
-        for i in 0..r.W-1 do
-            let c = match (i,j) with
-                    | 0,0 -> '\u250c' // top left
-                    | (0, _) when j = r.H - 1 -> '\u2514' // bottom left
-                    | _,0 when i = r.W-1 -> '\u2510' // top right
-                    | _,_ when i = r.W-1 && j = r.H-1 -> '\u2518' // bottom right
-                    | _,_ when j = 0 || j = r.H-1 -> '\u2500' // top or bottom
-                    | _,_ when i = 0 || i = r.W-1 -> '\u2502'  // left or right
-                    | _ -> '.'
-            set (r.X+i)(r.Y+j) (if i = 0 || i = (r.W-1) || j = (r.H - 1) || j = 0 then c else ' ') guid
+        if model.options.NodeBorders then
+            for j in 0..r.H-1 do
+            for i in 0..r.W-1 do
+                let c = match (i,j) with
+                        | 0,0 -> '\u250c' // top left
+                        | (0, _) when j = r.H - 1 -> '\u2514' // bottom left
+                        | _,0 when i = r.W-1 -> '\u2510' // top right
+                        | _,_ when i = r.W-1 && j = r.H-1 -> '\u2518' // bottom right
+                        | _,_ when j = 0 || j = r.H-1 -> '\u2500' // top or bottom
+                        | _,_ when i = 0 || i = r.W-1 -> '\u2502'  // left or right
+                        | _ -> '.'
+                set (r.X+i)(r.Y+j) (if i = 0 || i = (r.W-1) || j = (r.H - 1) || j = 0 then c else ' ') guid
         for i in 0.. n.title.Length-1 do
-            set (r.X+1+i+options.Margin) (r.Y+1) n.title.[i] guid
+            set (r.X + i + if model.options.NodeBorders then 1 + options.Margin else 0)
+                (r.Y + if model.options.NodeBorders then 1 else 0)
+                n.title.[i] guid
         ()
     
     let renderEdge (e:Edge) =

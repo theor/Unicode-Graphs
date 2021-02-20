@@ -8,15 +8,23 @@ type RenderOptions = {
     CanvasHeight: int option
     ActualCanvasWidth : int
     ActualCanvasHeight : int
+    NodeBorders: bool
     Margin: int }
     with
-        static member Default: RenderOptions = { CanvasWidth=None;CanvasHeight=None;Margin=1; ActualCanvasWidth=1; ActualCanvasHeight=1 }
+        static member Default: RenderOptions = {
+            CanvasWidth=None
+            CanvasHeight=None
+            Margin=1
+            ActualCanvasWidth=1
+            ActualCanvasHeight=1
+            NodeBorders = false
+        }
 type Model = {
     graph: Graph
     options: RenderOptions
     nodeSizes: Map<Id,Rect>
     selectedNode: Node option
-    startPos: Pos option
+    startPos: Pos option 
 
     }
     with
