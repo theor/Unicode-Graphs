@@ -9,12 +9,12 @@ open App.Geometry
 open App.Graph
 open App.Types
 
-let emptyChar = '.'
+let emptyChar = ' '
 
 let layout (model:Model) =
     let mutable nodeSizes = Map.empty<Id,Rect>
     let measureNode guid n =
-        let nw,nh = n.title.Length + (if model.options.NodeBorders then 2 + 2*model.options.Margin else 0),
+        let nw,nh = n.title.Length + 2*model.options.Margin + (if model.options.NodeBorders then 2 else 0),
                     if model.options.NodeBorders then 3 else 1
         let x,y = n.pos
         nodeSizes <- Map.add guid (Rect.Create(x,y,nw,nh)) nodeSizes
@@ -27,34 +27,33 @@ let layout (model:Model) =
     { model with
         options = {model.options with ActualCanvasWidth=w; ActualCanvasHeight=h}
         nodeSizes = nodeSizes}
-    
+
 
 [<RequireQualifiedAccess>]
 type MouseState = None | Down | Move | Up
 
+let getId (e:MouseEvent): Id option =
+    let elem = e.target :?> Browser.Types.HTMLElement
+    if not <| JsInterop.isNullOrUndefined elem then
+        match elem.dataset.Item "nid" with
+        | "" | null -> None
+        | s when JsInterop.isNullOrUndefined s -> None
+        | s -> UInt32.Parse s |> Id |> Some
+    else None
+
+let getNode (model:Model) (e:MouseEvent) : Node option =
+    getId e |> Option.bind (fun id -> Map.tryFind id (model.graph.nodes))
 let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:MouseEvent) =
     let graphElt = e.currentTarget :?> HTMLElement
-    
-    let getId (): Id option =
-        let elem = e.target :?> Browser.Types.HTMLElement
-        if not <| JsInterop.isNullOrUndefined elem then
-            match elem.dataset.Item "nid" with
-            | "" | null -> None
-            | s when JsInterop.isNullOrUndefined s -> None
-            | s -> UInt32.Parse s |> Id |> Some
-        else None
-        
-    let getNode() : Node option =
-        getId() |> Option.bind (fun id -> Map.tryFind id (model.graph.nodes))
-        
+
     let getCurrentCoords(): Pos =
          let rect = graphElt.getBoundingClientRect()
          float model.options.ActualCanvasWidth * (e.clientX - rect.left) / rect.width |> int32,
          float model.options.ActualCanvasHeight * (e.clientY - rect.top) / rect.height |> int32
-         
+
     match state with
     | MouseState.Down ->
-        let newSelectedNode = getNode()
+        let newSelectedNode = getNode model e
         let newPos = getCurrentCoords()
 //        if newSelectedNode <> model.selectedNode || Some(newPos) <> model.startPos then
         dispatch (SelectNode(newSelectedNode, Some newPos))
@@ -71,14 +70,14 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
              let nx,ny = n.pos
              dispatch <| Move(n.guid, (nx + dx, ny + dy))
     | _ -> failwith "todo"
-    
+
 let render dispatch (model:Model) =
     let options = model.options
     let g = model.graph
 
     let mutable b = Array.create (options.ActualCanvasWidth*options.ActualCanvasHeight) (emptyChar, Id.Default)
     let set x y c (id:Id) = b.[x + y*options.ActualCanvasWidth] <- (c,id)
-    
+
     let renderNode guid n =
         let r = Map.find guid model.nodeSizes
         if model.options.NodeBorders then
@@ -94,11 +93,11 @@ let render dispatch (model:Model) =
                         | _ -> '.'
                 set (r.X+i)(r.Y+j) (if i = 0 || i = (r.W-1) || j = (r.H - 1) || j = 0 then c else ' ') guid
         for i in 0.. n.title.Length-1 do
-            set (r.X + i + if model.options.NodeBorders then 1 + options.Margin else 0)
+            set (r.X + i + options.Margin + if model.options.NodeBorders then 1 else 0)
                 (r.Y + if model.options.NodeBorders then 1 else 0)
                 n.title.[i] guid
         ()
-    
+
     let renderEdge (e:Edge) =
         if not e.isNodeEdge then failwith "NOT NODE EDGE"
         let rf = model.nodeSizes.Item e.fromPort
@@ -106,10 +105,10 @@ let render dispatch (model:Model) =
         let mutable (i,j) = rf.Center in
         let rtx,rty = rt.Center
         while i <> rtx || j <> rty do
-            
+
             let dx,dy = (rtx-i),(rty-j)
             let sx,sy = Math.Sign dx, Math.Sign dy
-            
+
             if not (Rect.contains (i,j) rf) && not (Rect.contains (i,j) rt)
             then
                 let c = match sx,sy with
@@ -119,30 +118,31 @@ let render dispatch (model:Model) =
                          | 1, 0 | -1, 0 -> '\u2500'// '\u22ef'
                          | _ -> 'o'
                 set i j c EdgeId
-            
-            
+
+
             if dx <> 0 then i <- i+sx
             if dy <> 0 then j <- j+sy
             ()
-    
+
     g.nodes |> Map.iter renderNode
     g.edges |> List.iter renderEdge
-    
+
     seq {
         yield div [HTMLAttr.Id "graph-output"; ClassName "graph-output"
                    OnMouseMove (onMouseMove dispatch model MouseState.Move)
                    OnMouseDown (onMouseMove dispatch model MouseState.Down)
-                   OnMouseUp (onMouseMove dispatch model MouseState.Up) ]
-            
+                   OnMouseUp (onMouseMove dispatch model MouseState.Up)
+                   OnDoubleClick ((getNode model) >> (fun x -> JS.console.log("DOUBLE",x))) ]
+
             (seq {
                 for line in Seq.chunkBySize options.ActualCanvasWidth b do
                     let mutable (c,id) = line.[0]
                     let mutable i = 1
                     let mutable sb = StringBuilder(options.ActualCanvasWidth)
                     sb <- sb.Append c
-                    
+
                     let lineContent = seq {
-                    
+
                         while i < line.Length do
                             let c,nextId = line.[i]
                             if id <> nextId then
@@ -151,7 +151,7 @@ let render dispatch (model:Model) =
                             sb <- sb.Append c
                             id <- nextId
                             i <- i + 1
-                        if sb.Length > 0 then 
+                        if sb.Length > 0 then
                             yield span [ Data("nid", id.Value) ] [str <| sb.ToString()]
                     }
                     yield pre [] lineContent

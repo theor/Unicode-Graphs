@@ -10,13 +10,13 @@ open App.View
 let init() : Model =
     let gb = GraphBuilder()
     let a = gb.AddNode("A Node", (1,1))
-//    let b = gb.AddNode("B Node", (15,10))
+    let b = gb.AddNode("B Node", (15,10))
     let c = gb.AddNode("C Node", (15,1))
-//    let d = gb.AddNode("D Node", (25,5))
-//    gb.AddNodeEdge(a,b)
+    let d = gb.AddNode("D Node", (25,5))
+    gb.AddNodeEdge(a,b)
     gb.AddNodeEdge(a,c)
-//    gb.AddNodeEdge(c,b)
-//    gb.AddNodeEdge(c,d)
+    gb.AddNodeEdge(c,b)
+    gb.AddNodeEdge(c,d)
     newModel(gb.Build()) |> layout
 
 // UPDATE
