@@ -9,6 +9,9 @@
     margin: 0;
     user-select: none;
   }
+  .selected {
+    color:red;
+  }
 }
 .graph-output pre {
   padding: 0;

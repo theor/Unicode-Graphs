@@ -15,8 +15,21 @@ type Model = {
     graph: Graph
     options: RenderOptions
     nodeSizes: Map<Id,Rect>
-}
+    selectedNode: Node option
+    }
+    with
+        member this.selectedId() = this.selectedNode |> Option.map (fun n -> n.guid)
+let newModel(g:Graph) =
+    { graph=g
+      options=RenderOptions.Default
+      nodeSizes = Map.empty
+      selectedNode=None }
 type Msg =
 | Move of Id * Pos
 | AddNode of Id * string
+| SelectNode of Node option
 | Layout
+
+
+//let mutable selectedNode: Node option = None
+//let selectedId() = selectedNode |> Option.map (fun n -> n.guid)

@@ -17,9 +17,7 @@ let init() : Model =
     gb.AddNodeEdge(a,c)
     gb.AddNodeEdge(c,b)
     gb.AddNodeEdge(c,d)
-    { graph=gb.Build()
-      options=RenderOptions.Default
-      nodeSizes = Map.empty } |> layout
+    newModel(gb.Build()) |> layout
 
 // UPDATE
 
@@ -27,6 +25,7 @@ let update (msg:Msg) (model:Model) =
     match msg with
     | Layout -> layout model
     | Move(n, newPos) -> {model with graph = {model.graph with nodes = Map.change n (fun x -> { x.Value with pos = newPos } |> Some) model.graph.nodes}} |> layout
+    | SelectNode n -> {model with selectedNode = n}
     | AddNode(id, title) ->
         let gb = GraphBuilder(model.graph)
         ignore <| gb.AddNode(title=title, id=id)

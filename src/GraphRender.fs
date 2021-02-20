@@ -8,6 +8,7 @@ open Browser.Types
 open App.Geometry
 open App.Graph
 open App.Types
+
 let emptyChar = ' '
 
 
@@ -27,7 +28,6 @@ let layout (model:Model) =
         nodeSizes = nodeSizes}
     
 
-let mutable selectedNode: Node option = None
 let mutable startPos: Pos option = None
 [<RequireQualifiedAccess>]
 type MouseState = None | Down | Move | Up
@@ -45,16 +45,15 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
         getId() |> Option.bind (fun id -> Map.tryFind id (model.graph.nodes))
     let getCurrentCoords(): Pos =
          let rect = graphElt.getBoundingClientRect()
-         JS.console.log rect
          float model.options.ActualCanvasWidth * (e.clientX - rect.left) / rect.width |> int32,
          float model.options.ActualCanvasHeight * (e.clientY - rect.top) / rect.height |> int32 
     match state with
     | MouseState.Down ->
-        selectedNode <- getNode()
+        let newSelectedNode = getNode()
+        if newSelectedNode <> model.selectedNode then dispatch (SelectNode newSelectedNode)
         startPos <- getCurrentCoords() |> Some
-        printfn "Selected: %A cur pos: %A" selectedNode startPos
+        printfn "Selected: %A cur pos: %A" model.selectedNode startPos
     | MouseState.Up ->
-        selectedNode <- None
         startPos <- None
     | MouseState.Move when startPos.IsNone -> ()
     | MouseState.Move ->
@@ -63,7 +62,7 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
          let x,y = getCurrentCoords()
          let dx,dy = x-sx, y-sy
 //         JS.console.log(e.clientX - graphElt.clientLeft, e.clientY - graphElt.clientTop, graphElt.clientWidth, graphElt.clientHeight)
-         match selectedNode with
+         match model.selectedNode with
          | None -> ()
          | Some n ->
              let nx,ny = n.pos
@@ -145,7 +144,7 @@ let render dispatch (model:Model) =
                         while i < line.Length do
                             let c,nextId = line.[i]
                             if id <> nextId then
-                                yield span [ Data("nid", id.Value) ] [str <| sb.ToString()]
+                                yield span (seq { yield Data("nid", id.Value); if model.selectedId() = Some(id) then yield Class "selected" }) [str <| sb.ToString()]
                                 sb <- sb.Clear()
                             sb <- sb.Append c
                             id <- nextId
