@@ -8,7 +8,6 @@ with
     static member Default = Id 0u
     member this.Value = match this with Id(i) -> i
 // skip 1 as it's the reserved edge id
-let EdgeId = Id 1u
 let mutable next = 1u
 let nextId() =
     next <- next + 1u
@@ -31,6 +30,7 @@ type Node = {
 
 [<Struct>]
 type Edge = {
+    id: Id
     fromPort: Id
     toPort: Id
     isNodeEdge: bool
@@ -38,12 +38,12 @@ type Edge = {
 
 type Graph = {
     nodes: Map<Id,Node>
-    edges: Edge list
+    edges: Map<Id, Edge>
 }
 
 let emptyGraph(): Graph = {
     nodes= Map.empty
-    edges= []
+    edges= Map.empty
 }
 
 let newPort (title: string) : Port =
@@ -64,8 +64,9 @@ let newNode () : Node =
 type GraphBuilder(g0:Graph) =
     let mutable g: Graph = g0
     new() = GraphBuilder(emptyGraph())
-    member this.AddNodeEdge(fromNode:Id, toNode:Id) =
-        g <- {g with edges = {fromPort=fromNode; toPort=toNode; isNodeEdge = true} :: g.edges}
+    member this.AddNodeEdge(fromNode:Id, toNode:Id, ?id:Id) =
+       let guid = Option.defaultWith nextId id in
+       g <- {g with edges = Map.add guid {id=guid; fromPort=fromNode; toPort=toNode; isNodeEdge = true} g.edges}
     member this.AddNode(?title: string, ?pos: Pos, ?inputs: string List, ?outputs: string List, ?id:Id) =
        let guid = Option.defaultWith nextId id in
        let n = { guid = guid

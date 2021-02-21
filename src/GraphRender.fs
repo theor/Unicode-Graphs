@@ -98,7 +98,7 @@ let render dispatch (model:Model) =
                 n.title.[i] guid
         ()
 
-    let renderEdge (e:Edge) =
+    let renderEdge id (e:Edge) =
         if not e.isNodeEdge then failwith "NOT NODE EDGE"
         let rf = model.nodeSizes.Item e.fromPort
         let rt = model.nodeSizes.Item e.toPort
@@ -117,7 +117,7 @@ let render dispatch (model:Model) =
                          | 0, -1 | 0, 1 -> '|'//'\u22ee'
                          | 1, 0 | -1, 0 -> '\u2500'// '\u22ef'
                          | _ -> 'o'
-                set i j c EdgeId
+                set i j c id
 
 
             if dx <> 0 then i <- i+sx
@@ -125,7 +125,7 @@ let render dispatch (model:Model) =
             ()
 
     g.nodes |> Map.iter renderNode
-    g.edges |> List.iter renderEdge
+    g.edges |> Map.iter renderEdge
 
     seq {
         yield div [HTMLAttr.Id "graph-output"; ClassName "graph-output"
