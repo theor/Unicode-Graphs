@@ -14,20 +14,29 @@ let view (model:Model) dispatch =
       ()
   div [] [
       section [ Class "section" ] [
-        div [ Class "container" ] 
+        div [ Class "container" ]
           (seq {
             yield p [Class "buttons"] [
               button [Class "button"; OnClick (fun _ -> dispatch (AddNode(Graph.nextId(), "New")))] [str "New Node"]
             ]
-            yield! GraphRender.render dispatch model
-            yield! GraphRender.render dispatch (GraphRender.layout {model with options = {model.options with NodeBorders = not model.options.NodeBorders} })
+            yield div [Class "columns"] [
+              div [Class "column"]  (seq {
+                yield! GraphRender.render dispatch model
+                yield! GraphRender.render dispatch (GraphRender.layout {model with options = {model.options with NodeBorders = not model.options.NodeBorders} })
+              })
+              div [Class "column"] [
+                App.EditorView.view model dispatch
+              ]
+
+            ]
+
           })
         div [ Class "container" ] [
           button [ClassName "button is-primary"
                   OnClick (fun _ -> doCopy())] [str "Copy"]
         ]
       ]
-      
+
       section [ Class "section" ] [
       ]
   ]

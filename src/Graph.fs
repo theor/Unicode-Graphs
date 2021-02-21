@@ -63,7 +63,7 @@ let newNode () : Node =
     }
 type GraphBuilder(g0:Graph) =
     let mutable g: Graph = g0
-    new() = GraphBuilder(emptyGraph()) 
+    new() = GraphBuilder(emptyGraph())
     member this.AddNodeEdge(fromNode:Id, toNode:Id) =
         g <- {g with edges = {fromPort=fromNode; toPort=toNode; isNodeEdge = true} :: g.edges}
     member this.AddNode(?title: string, ?pos: Pos, ?inputs: string List, ?outputs: string List, ?id:Id) =
@@ -75,4 +75,7 @@ type GraphBuilder(g0:Graph) =
                  outputs = defaultArg outputs [] |> List.map newPort }
        g <- { g with nodes = Map.add n.guid n g.nodes }
        n.guid
+    member this.UpdateNode(node:Node): GraphBuilder =
+        g <- {g with nodes = Map.change node.guid (fun _ -> Some node) g.nodes}
+        this
     member this.Build() = g

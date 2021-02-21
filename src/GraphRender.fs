@@ -23,7 +23,7 @@ let layout (model:Model) =
     let maxH = 2 + (nodeSizes |> Map.fold (fun max _ n -> Math.Max(max, (n.Y + n.H))) 0)
     let w = Option.defaultValue maxW model.options.CanvasWidth
     let h = Option.defaultValue maxH model.options.CanvasHeight
-    JS.console.log(nodeSizes |> Map.toSeq |> Seq.map (fun (_,x) -> x) |> Seq.toArray, nodeSizes |> Map.toArray |> Array.map (fun (a,b) -> b.Center))
+//    JS.console.log(nodeSizes |> Map.toSeq |> Seq.map (fun (_,x) -> x) |> Seq.toArray, nodeSizes |> Map.toArray |> Array.map (fun (a,b) -> b.Center))
     { model with
         options = {model.options with ActualCanvasWidth=w; ActualCanvasHeight=h}
         nodeSizes = nodeSizes}
@@ -53,17 +53,17 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
 
     match state with
     | MouseState.Down ->
-        let newSelectedNode = getNode model e
+        let newSelectedNode = getId e
         let newPos = getCurrentCoords()
 //        if newSelectedNode <> model.selectedNode || Some(newPos) <> model.startPos then
         dispatch (SelectNode(newSelectedNode, Some newPos))
-    | MouseState.Up -> dispatch <| SelectNode(model.selectedNode, None)
+    | MouseState.Up -> dispatch <| SelectNode(model.selectedId, None)
     | MouseState.Move when model.startPos.IsNone -> ()// printfn "skip"; ()
     | MouseState.Move ->
          let sx,sy = model.startPos.Value;
          let x,y = getCurrentCoords()
          let dx,dy = x-sx, y-sy
-         JS.console.log(e.clientX - graphElt.clientLeft, e.clientY - graphElt.clientTop, graphElt.clientWidth, graphElt.clientHeight)
+//         JS.console.log(e.clientX - graphElt.clientLeft, e.clientY - graphElt.clientTop, graphElt.clientWidth, graphElt.clientHeight)
          match model.selectedNode with
          | None -> ()
          | Some n ->
@@ -146,7 +146,7 @@ let render dispatch (model:Model) =
                         while i < line.Length do
                             let c,nextId = line.[i]
                             if id <> nextId then
-                                yield span (seq { yield Data("nid", id.Value); if model.selectedId() = Some(id) then yield Class "selected" }) [str <| sb.ToString()]
+                                yield span (seq { yield Data("nid", id.Value); if model.selectedId = Some(id) then yield Class "selected" }) [str <| sb.ToString()]
                                 sb <- sb.Clear()
                             sb <- sb.Append c
                             id <- nextId

@@ -23,22 +23,25 @@ type Model = {
     graph: Graph
     options: RenderOptions
     nodeSizes: Map<Id,Rect>
-    selectedNode: Node option
-    startPos: Pos option 
+    selectedId: Id option
+    startPos: Pos option
 
     }
     with
-        member this.selectedId() = this.selectedNode |> Option.map (fun n -> n.guid)
+        member this.selectedNode: Node option =
+            Option.bind (fun id -> this.graph.nodes |> Map.tryFind id) this.selectedId
 let newModel(g:Graph) =
     { graph=g
       options=RenderOptions.Default
       nodeSizes = Map.empty
-      selectedNode=None
+      selectedId=None
       startPos = None }
 type Msg =
 | Move of Id * Pos
 | AddNode of Id * string
-| SelectNode of Node option * Pos option
+| SelectNode of Id option * Pos option
+| ChangeOptions of RenderOptions
+| ChangeNode of Node
 | Layout
 
 
