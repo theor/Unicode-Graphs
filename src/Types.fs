@@ -24,7 +24,7 @@ type Model = {
     options: RenderOptions
     nodeSizes: Map<Id,Rect>
     selectedId: Id option
-    startPos: Pos option
+    deltaPos: Pos option
 
     }
     with
@@ -35,7 +35,8 @@ let newModel(g:Graph) =
       options=RenderOptions.Default
       nodeSizes = Map.empty
       selectedId=None
-      startPos = None }
+      /// Delta between node pos (top left corner) and actual mouse click (eg. the node center) used when moving a node
+      deltaPos = None }
 type Msg =
 | Move of Id * Pos
 | AddNode of Id * string
@@ -44,6 +45,3 @@ type Msg =
 | ChangeNode of Node
 | Layout
 
-
-//let mutable selectedNode: Node option = None
-//let selectedId() = selectedNode |> Option.map (fun n -> n.guid)

@@ -54,22 +54,21 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
     match state with
     | MouseState.Down ->
         let newSelectedNode = getId e
-        let newPos = newSelectedNode |> Option.filter (model.graph.nodes.ContainsKey) |> Option.map (fun _ -> getCurrentCoords())
-//        if newSelectedNode <> model.selectedNode || Some(newPos) <> model.startPos then
+        let newPos = newSelectedNode |> Option.bind (model.graph.nodes.TryFind) |> Option.map (fun n -> let x,y = getCurrentCoords() in let nx,ny = n.pos in nx-x, ny-y)
         JS.console.log("START POS", newPos)
         dispatch (SelectNode(newSelectedNode, newPos))
     | MouseState.Up -> dispatch <| SelectNode(model.selectedId, None)
-    | MouseState.Move when model.startPos.IsNone -> ()// printfn "skip"; ()
+    | MouseState.Move when model.deltaPos.IsNone -> JS.console.log("CURRENT", getCurrentCoords()); ()
     | MouseState.Move ->
 //         JS.console.log(e.clientX - graphElt.clientLeft, e.clientY - graphElt.clientTop, graphElt.clientWidth, graphElt.clientHeight)
          match model.selectedNode with
          | None -> ()
          | Some n ->
-             let sx,sy = model.startPos.Value;
+             JS.console.log("CURRENT", getCurrentCoords(), "START", model.deltaPos, "NODE", n.pos)
+
+             let sx,sy = model.deltaPos.Value;
              let x,y = getCurrentCoords()
-             let dx,dy = x-sx, y-sy
-             let nx,ny = n.pos
-             dispatch <| Move(n.guid, (x,y))
+             dispatch <| Move(n.guid, (sx+x,sy+y))
     | _ -> failwith "todo"
 
 let render dispatch (model:Model) =
@@ -126,7 +125,7 @@ let render dispatch (model:Model) =
             ()
 
     g.nodes |> Map.iter renderNode
-//    g.edges |> Map.iter renderEdge
+    g.edges |> Map.iter renderEdge
 
     seq {
         yield div [HTMLAttr.Id "graph-output"; ClassName "graph-output"

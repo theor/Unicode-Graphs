@@ -36,7 +36,7 @@ let view (model:Model) dispatch =
 
     div [] (seq {
         yield h2 [Class "title"] [str "Options"]
-//        yield controlCheckbox "Node Borders" model.options.NodeBorders (fun b -> {model.options with NodeBorders = b})// (input [Class "input"; Type "number"; Value model.options.Margin; OnChange (dispatchChange (fun e o -> {o with Margin = int e.Value}))])
-//        yield control "Margin" (input [Class "input"; Type "number"; Value model.options.Margin; OnChange (dispatchChange (fun e o -> {o with Margin = int e.Value}))])
-//        if model.selectedNode.IsSome then yield! selectedNodeView model.selectedNode.Value
+        yield controlCheckbox "Node Borders" model.options.NodeBorders (fun b -> {model.options with NodeBorders = b})// (input [Class "input"; Type "number"; Value model.options.Margin; OnChange (dispatchChange (fun e o -> {o with Margin = int e.Value}))])
+        yield control "Margin" (input [Class "input"; Type "number"; Value model.options.Margin; OnChange (dispatchChange (fun e o -> {o with Margin = int e.Value}))])
+        if model.selectedNode.IsSome then yield! selectedNodeView model.selectedNode.Value
     })
