@@ -34,12 +34,16 @@ type Edge = {
     fromNode: Id * uint
     toNode: Id * uint
     isNodeEdge: bool
+    offset: int
 }
 
 type Graph = {
     nodes: Map<Id,Node>
     edges: Map<Id, Edge>
 }
+
+[<RequireQualifiedAccess>]
+type Direction = Input | Output
 
 let emptyGraph(): Graph = {
     nodes= Map.empty
@@ -66,10 +70,10 @@ type GraphBuilder(g0:Graph) =
     new() = GraphBuilder(emptyGraph())
     member this.AddNodeEdge(fromNode:Id, toNode:Id, ?id:Id) =
        let guid = Option.defaultWith nextId id in
-       g <- {g with edges = Map.add guid {id=guid; fromNode=(fromNode,UInt32.MaxValue); toNode=(toNode,UInt32.MaxValue); isNodeEdge = true} g.edges}
+       g <- {g with edges = Map.add guid {id=guid; fromNode=(fromNode,UInt32.MaxValue); toNode=(toNode,UInt32.MaxValue); isNodeEdge = true; offset=0} g.edges}
     member this.AddEdge(fromNode:Id, fromIndex:uint, toNode:Id, toIndex:uint, ?id:Id) =
        let guid = Option.defaultWith nextId id in
-       g <- {g with edges = Map.add guid {id=guid; fromNode=(fromNode,fromIndex); toNode=(toNode,toIndex); isNodeEdge = true} g.edges}
+       g <- {g with edges = Map.add guid {id=guid; fromNode=(fromNode,fromIndex); toNode=(toNode,toIndex); isNodeEdge = true; offset=0} g.edges}
     member this.AddNode(?title: string, ?pos: Pos, ?inputs: string List, ?outputs: string List, ?id:Id) =
        let guid = Option.defaultWith nextId id in
        let n = { guid = guid

@@ -24,7 +24,10 @@ let layout (model:Model) =
                         | Some(a),Some(b) -> a.title.Length+b.title.Length+3 (* 2*port char + space between them*) + ifBordersThen2
                         | Some(x),None | None,Some(x) -> x.title.Length+1+1 + ifBordersThen2
                         | _ -> failwith "Impossible"
-                } |> Seq.map (fun x -> JS.console.log(x); x) |> Seq.max
+                }
+//                |> Seq.map (fun x -> JS.console.log(x); x)
+                |> (fun l -> if Seq.isEmpty l then Seq.replicate 1 0 else l)
+                |> Seq.max
             else 0
         
         
@@ -131,25 +134,66 @@ let render dispatch (model:Model) =
         let rt = model.nodeSizes.Item toNode
         let mutable (i,j) = if not options.ShowPorts || fromIndex = UInt32.MaxValue then rf.Center else getPortPosition rf false fromIndex in
         let rtx,rty =  if not options.ShowPorts || toIndex = UInt32.MaxValue then rt.Center else getPortPosition rt true toIndex
-        while i <> rtx || j <> rty do
-
-            let dx,dy = (rtx-i),(rty-j)
-            let sx,sy = Math.Sign dx, Math.Sign dy
-
-            if not (Rect.contains (i,j) rf) && not (Rect.contains (i,j) rt)
-            then
-                let c = match sx,sy with
-                         | 1, 1 | -1, -1 -> '\\'// '\u22F1'
-                         | 1, -1 | -1, 1 -> '/'// '\u22F0'
-                         | 0, -1 | 0, 1 -> '|'//'\u22ee'
-                         | 1, 0 | -1, 0 -> '\u2500'// '\u22ef'
-                         | _ -> 'o'
-                set i j c id
-
-
-            if dx <> 0 then i <- i+sx
-            if dy <> 0 then j <- j+sy
-            ()
+        let edgeCenterX, edgeCenterY = (i+rtx)/2+e.offset, (j+rty)/2
+        let dirX, dirY = sign (rtx-i), sign (rty-j)
+        let needHorizontalMove = i <> edgeCenterX 
+        
+        // horiz bar until before the corner
+        if needHorizontalMove then
+            while i <> edgeCenterX-dirX do
+                set i j '\u2500' id
+                i <- i + dirX
+            
+        // 1st corner
+        match dirY with
+        | 0 -> set i j '\u2500' id
+        | 1 ->
+            set i j '\u2510' id
+            j <- j + dirY
+        | -1 ->
+            set i j '\u2518' id
+            j <- j + dirY
+            
+        // vertical bar until 2nd corner
+        while j <> rty do
+            set i j '\u2502' id
+            j <- j + dirY
+            
+        // 2nd corner
+        match dirY with
+        | 0 -> set i j '\u2500' id
+        | 1 ->
+            set i j '\u2514' id
+            i <- i + dirX
+        | -1 ->
+            set i j '\u250c' id
+            i <- i + dirX
+            
+        // from 2nd corner to other port
+        
+        if needHorizontalMove then
+            while i <> rtx do
+                set i j '\u2500' id
+                i <- i + dirX
+//        while i <> rtx || j <> rty do
+//
+//            let dx,dy = (rtx-i),(rty-j)
+//            let sx,sy = Math.Sign dx, Math.Sign dy
+//
+//            if not (Rect.contains (i,j) rf) && not (Rect.contains (i,j) rt)
+//            then
+//                let c = match sx,sy with
+//                         | 1, 1 | -1, -1 -> '\\'// '\u22F1'
+//                         | 1, -1 | -1, 1 -> '/'// '\u22F0'
+//                         | 0, -1 | 0, 1 -> '|'//'\u22ee'
+//                         | 1, 0 | -1, 0 -> '\u2500'// '\u22ef'
+//                         | _ -> 'o'
+//                set i j c id
+//
+//
+//            if dx <> 0 then i <- i+sx
+//            if dy <> 0 then j <- j+sy
+//            ()
 
     g.nodes |> Map.iter renderNode
     g.edges |> Map.iter renderEdge

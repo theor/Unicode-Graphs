@@ -1,4 +1,5 @@
 module App.EditorView
+open App.Graph
 open Browser.Types
 open Fable.React
 open Fable.React.Props
@@ -23,6 +24,18 @@ let view (model:Model) dispatch =
             label [Class "label"] [str name]
             yield! controls
         ]
+    let sectionLabelHorizontal (name:string) controls =
+        div [Class "field is-horizontal"] [
+                div [Class "field-label is-normal"] [
+                    label [Class "label"] [str name]
+                ]
+                div [Class "field-body"] [
+                    div [Class "field has-addons  has-addons-right"] [
+                        yield! controls
+                    ]
+                    
+                ]
+            ]
     let control (name:string) controlInput =
         div [Class "field"] [
             label [Class "label"] [str name]
@@ -32,15 +45,52 @@ let view (model:Model) dispatch =
         ]
 
 
+    let replace l idx x = List.mapi (fun i elt -> if i <> idx then elt else x) l
     let selectedNodeView (n:Graph.Node) =
+        let portView (dir:Direction) idx (p:Port) =
+            div [Class "field is-horizontal"] [
+                div [Class "field-label is-normal"] [
+                    label [Class "label"] [str (string idx)]
+                ]
+                div [Class "field-body"] [
+                    div [Class "field is-narrow has-addons"] [
+                        div [Class "control"] [
+                            input [Class "input"; Type "text"; Value p.title; OnChange (dispatchNodeChange (fun e ->
+                                if dir = Direction.Input
+                                then {n with inputs = replace n.inputs idx {p with title = e.Value} }
+                                else {n with outputs = replace n.outputs idx {p with title = e.Value} }
+                                ))] 
+                        ]
+                        div [Class "control"] [
+                            button [ Class "button is-danger"; OnClick (dispatchNodeChange (fun _ ->
+                                if dir = Direction.Input
+                                then {n with inputs = n.inputs |> List.indexed |> List.choose (fun (cidx,p) -> if cidx = idx then None else Some p) }
+                                else {n with outputs = n.outputs |> List.indexed |> List.choose (fun (cidx,p) -> if cidx = idx then None else Some p) }
+                                )) ] [
+                                span [Class "icon"] [ i [Class "fas fa-minus-circle"] [] ]
+                            ]
+                        ]
+                    ]
+                    
+                ]
+            ]
+        let createPortButton dir =
+            let onClick = dispatchNodeChange (fun _ ->
+                if dir = Direction.Input
+                then { n with inputs = n.inputs @ [ newPort "new" ] }
+                else { n with outputs = n.outputs @ [ newPort "new" ] }
+            )
+            div [Class "control"] [
+                    button [ Class "button is-right is-small is-primary"; OnClick onClick] [ span [Class "icon"] [ i [Class "fas fa-plus"] [] ]  ]
+                ]
         [
             yield h2 [Class "title"] [str "Current Node"]
             yield control "Title" (input [Class "input"; Type "text"; Value n.title; OnChange (dispatchNodeChange (fun e -> {n with title = e.Value}))])
 
-            yield sectionLabel "Inputs" [
-                div [Class "control"] [ (input [Class "input"; Type "text"; Value n.title; OnChange (dispatchNodeChange (fun e -> {n with title = e.Value}))]) ]
-                div [Class "control"] [ (input [Class "input"; Type "text"; Value n.title; OnChange (dispatchNodeChange (fun e -> {n with title = e.Value}))])
-            ] ]
+            yield sectionLabelHorizontal "Inputs" [ createPortButton Direction.Input ]
+            yield! n.inputs |> List.mapi (portView Direction.Input)
+            yield sectionLabelHorizontal "Outputs" [ createPortButton Direction.Output ]
+            yield! n.outputs |> List.mapi (portView Direction.Output)  
         ]
 
     div [] (seq {
