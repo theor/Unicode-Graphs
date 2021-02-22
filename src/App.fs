@@ -2,6 +2,7 @@ module App
 
 open Elmish
 open Elmish.React
+open Elmish.Debug
 open App.Graph
 open App.Types
 open App.GraphRender
@@ -40,5 +41,8 @@ let update (msg:Msg) (model:Model) =
 Program.mkSimple init update view
 //|> Program.withReactSynchronous "elmish-app"
 |> Program.withReactBatched "elmish-app"
+#if DEBUG
 |> Program.withConsoleTrace
+|> Program.withDebugger
+#endif
 |> Program.run
