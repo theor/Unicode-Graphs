@@ -10,14 +10,14 @@ open App.View
 
 let init() : Model =
     let gb = GraphBuilder()
-    let a = gb.AddNode("A Node", (1,1))
-    let b = gb.AddNode("B Node", (15,10))
-    let c = gb.AddNode("C Node", (15,1))
-    let d = gb.AddNode("D Node", (25,5))
-    gb.AddNodeEdge(a,b)
-    gb.AddNodeEdge(a,c)
-    gb.AddNodeEdge(c,b)
-    gb.AddNodeEdge(c,d)
+    let a = gb.AddNode("A Node", (1,1), ["I1"], ["O1";"1234 1234 O2"])
+    let b = gb.AddNode("B Node", (25,1), ["BI --- 1"; "BI2"], ["BO1"])
+//    let c = gb.AddNode("C Node", (15,1))
+//    let d = gb.AddNode("D Node", (25,5))
+    gb.AddEdge(a, 0u,b, 1u)
+//    gb.AddNodeEdge(a,c)
+//    gb.AddNodeEdge(c,b)
+//    gb.AddNodeEdge(c,d)
     newModel(gb.Build()) |> layout
 
 // UPDATE
@@ -42,7 +42,7 @@ Program.mkSimple init update view
 //|> Program.withReactSynchronous "elmish-app"
 |> Program.withReactBatched "elmish-app"
 #if DEBUG
-|> Program.withConsoleTrace
+//|> Program.withConsoleTrace
 |> Program.withDebugger
 #endif
 |> Program.run

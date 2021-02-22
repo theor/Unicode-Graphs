@@ -9,13 +9,28 @@ open App.Geometry
 open App.Graph
 open App.Types
 
-let emptyChar = ' '
+let emptyChar = '.'
+let portChar = "\u25CC"
 
 let layout (model:Model) =
+    let ifBordersThen2 = (if model.options.NodeBorders then 2 else 0)
     let mutable nodeSizes = Map.empty<Id,Rect>
     let measureNode guid n =
-        let nw,nh = n.title.Length + 2*model.options.Margin + (if model.options.NodeBorders then 2 else 0),
-                    if model.options.NodeBorders then 3 else 1
+        let portWidth =
+            if model.options.ShowPorts then
+                seq {
+                    for i in 0..Math.Max(n.inputs.Length,n.outputs.Length)-1 do
+                        match List.tryItem i n.inputs, List.tryItem i n.outputs with
+                        | Some(a),Some(b) -> a.title.Length+b.title.Length+3 (* 2*port char + space between them*) + ifBordersThen2
+                        | Some(x),None | None,Some(x) -> x.title.Length+1+1 + ifBordersThen2
+                        | _ -> failwith "Impossible"
+                } |> Seq.map (fun x -> JS.console.log(x); x) |> Seq.max
+            else 0
+        
+        
+        let nw,nh = n.title.Length + 2*model.options.Margin + ifBordersThen2,
+                    (if model.options.NodeBorders then 3 else 1) + if model.options.ShowPorts then Math.Max(n.inputs.Length, n.outputs.Length) else 0
+        let nw = Math.Max(nw, portWidth)
         let x,y = n.pos
         nodeSizes <- Map.add guid (Rect.Create(x,y,nw,nh)) nodeSizes
     model.graph.nodes |> Map.iter measureNode
@@ -62,8 +77,8 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
     | MouseState.Move ->
 //         JS.console.log(e.clientX - graphElt.clientLeft, e.clientY - graphElt.clientTop, graphElt.clientWidth, graphElt.clientHeight)
         model.selectedNode |> Option.iter (fun n ->
-             let sx,sy = model.deltaPos.Value;
-             let x,y = getCurrentCoords()
+            let sx,sy = model.deltaPos.Value;
+            let x,y = getCurrentCoords()
             dispatch <| Move(n.guid, (sx+x,sy+y)))
             
     | _ -> failwith "todo"
@@ -71,9 +86,14 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
 let render dispatch (model:Model) =
     let options = model.options
     let g = model.graph
+    let ifBorderThenOne = if model.options.NodeBorders then 1 else 0
 
     let mutable b = Array.create (options.ActualCanvasWidth*options.ActualCanvasHeight) (emptyChar, Id.Default)
     let set x y c (id:Id) = b.[x + y*options.ActualCanvasWidth] <- (c,id)
+    
+    let renderLabel x y (s:string) (id:Id) =
+        for i in 0..s.Length - 1 do
+            set (x+i) (y) s.[i] id
 
     let renderNode guid n =
         let r = Map.find guid model.nodeSizes
@@ -89,18 +109,28 @@ let render dispatch (model:Model) =
                         | _,_ when i = 0 || i = r.W-1 -> '\u2502'  // left or right
                         | _ -> '.'
                 set (r.X+i)(r.Y+j) (if i = 0 || i = (r.W-1) || j = (r.H - 1) || j = 0 then c else ' ') guid
-        for i in 0.. n.title.Length-1 do
-            set (r.X + i + options.Margin + if model.options.NodeBorders then 1 else 0)
-                (r.Y + if model.options.NodeBorders then 1 else 0)
-                n.title.[i] guid
+        renderLabel (r.X  + options.Margin + if model.options.NodeBorders then 1 else 0) (r.Y + ifBorderThenOne) n.title guid
+//        for i in 0.. n.title.Length-1 do
+//            set (r.X  + options.Margin + if model.options.NodeBorders then 1 else 0+ i)
+//                (r.Y + if model.options.NodeBorders then 1 else 0)
+//                n.title.[i] guid
+        if model.options.ShowPorts then
+            n.inputs |> List.iteri (fun i p -> renderLabel (r.X+1) (r.Y + 1 + i + ifBorderThenOne) (portChar + p.title) guid)
+            n.outputs |> List.iteri (fun i p -> renderLabel (r.X + r.W - 2*ifBorderThenOne - p.title.Length) (r.Y + 1 + i + ifBorderThenOne) (p.title + portChar) guid)
         ()
+        
+    let getPortPosition (r:Rect) (isInput:bool) (index:uint) =
+        let y = r.Y + 1 + int index + ifBorderThenOne
+        let x = if isInput then r.X else (r.X+r.W)
+        x,y
 
     let renderEdge id (e:Edge) =
-        if not e.isNodeEdge then failwith "NOT NODE EDGE"
-        let rf = model.nodeSizes.Item e.fromPort
-        let rt = model.nodeSizes.Item e.toPort
-        let mutable (i,j) = rf.Center in
-        let rtx,rty = rt.Center
+        let fromNode, fromIndex = e.fromNode
+        let toNode, toIndex = e.toNode
+        let rf = model.nodeSizes.Item fromNode
+        let rt = model.nodeSizes.Item toNode
+        let mutable (i,j) = if not options.ShowPorts || fromIndex = UInt32.MaxValue then rf.Center else getPortPosition rf false fromIndex in
+        let rtx,rty =  if not options.ShowPorts || toIndex = UInt32.MaxValue then rt.Center else getPortPosition rt true toIndex
         while i <> rtx || j <> rty do
 
             let dx,dy = (rtx-i),(rty-j)

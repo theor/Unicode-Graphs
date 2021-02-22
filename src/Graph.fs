@@ -31,8 +31,8 @@ type Node = {
 [<Struct>]
 type Edge = {
     id: Id
-    fromPort: Id
-    toPort: Id
+    fromNode: Id * uint
+    toNode: Id * uint
     isNodeEdge: bool
 }
 
@@ -50,7 +50,7 @@ let newPort (title: string) : Port =
     let guid = nextId() in
     {
         guid= guid
-        title = guid.ToString()
+        title = title
     }
 let newNode () : Node =
     let guid = nextId() in
@@ -66,7 +66,10 @@ type GraphBuilder(g0:Graph) =
     new() = GraphBuilder(emptyGraph())
     member this.AddNodeEdge(fromNode:Id, toNode:Id, ?id:Id) =
        let guid = Option.defaultWith nextId id in
-       g <- {g with edges = Map.add guid {id=guid; fromPort=fromNode; toPort=toNode; isNodeEdge = true} g.edges}
+       g <- {g with edges = Map.add guid {id=guid; fromNode=(fromNode,UInt32.MaxValue); toNode=(toNode,UInt32.MaxValue); isNodeEdge = true} g.edges}
+    member this.AddEdge(fromNode:Id, fromIndex:uint, toNode:Id, toIndex:uint, ?id:Id) =
+       let guid = Option.defaultWith nextId id in
+       g <- {g with edges = Map.add guid {id=guid; fromNode=(fromNode,fromIndex); toNode=(toNode,toIndex); isNodeEdge = true} g.edges}
     member this.AddNode(?title: string, ?pos: Pos, ?inputs: string List, ?outputs: string List, ?id:Id) =
        let guid = Option.defaultWith nextId id in
        let n = { guid = guid

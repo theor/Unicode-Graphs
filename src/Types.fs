@@ -9,6 +9,7 @@ type RenderOptions = {
     ActualCanvasWidth : int
     ActualCanvasHeight : int
     NodeBorders: bool
+    ShowPorts: bool
     Margin: int }
     with
         static member Default: RenderOptions = {
@@ -18,6 +19,7 @@ type RenderOptions = {
             ActualCanvasWidth=1
             ActualCanvasHeight=1
             NodeBorders = false
+            ShowPorts = true
         }
 type Model = {
     graph: Graph
