@@ -58,17 +58,14 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
         JS.console.log("START POS", newPos)
         dispatch (SelectNode(newSelectedNode, newPos))
     | MouseState.Up -> dispatch <| SelectNode(model.selectedId, None)
-    | MouseState.Move when model.deltaPos.IsNone -> JS.console.log("CURRENT", getCurrentCoords()); ()
+    | MouseState.Move when model.deltaPos.IsNone ->  ()
     | MouseState.Move ->
 //         JS.console.log(e.clientX - graphElt.clientLeft, e.clientY - graphElt.clientTop, graphElt.clientWidth, graphElt.clientHeight)
-         match model.selectedNode with
-         | None -> ()
-         | Some n ->
-             JS.console.log("CURRENT", getCurrentCoords(), "START", model.deltaPos, "NODE", n.pos)
-
+        model.selectedNode |> Option.iter (fun n ->
              let sx,sy = model.deltaPos.Value;
              let x,y = getCurrentCoords()
-             dispatch <| Move(n.guid, (sx+x,sy+y))
+            dispatch <| Move(n.guid, (sx+x,sy+y)))
+            
     | _ -> failwith "todo"
 
 let render dispatch (model:Model) =
