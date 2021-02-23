@@ -112,7 +112,9 @@ let render dispatch (model:Model) =
                         | _,_ when i = 0 || i = r.W-1 -> '\u2502'  // left or right
                         | _ -> '.'
                 set (r.X+i)(r.Y+j) (if i = 0 || i = (r.W-1) || j = (r.H - 1) || j = 0 then c else ' ') guid
-        renderLabel (r.X  + options.Margin + if model.options.NodeBorders then 1 else 0) (r.Y + ifBorderThenOne) n.title guid
+        renderLabel (r.X + r.W / 2 - n.title.Length / 2)// (r.X  + options.Margin + if model.options.NodeBorders then 1 else 0)
+            (r.Y + ifBorderThenOne)
+            n.title guid
 //        for i in 0.. n.title.Length-1 do
 //            set (r.X  + options.Margin + if model.options.NodeBorders then 1 else 0+ i)
 //                (r.Y + if model.options.NodeBorders then 1 else 0)
