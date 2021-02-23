@@ -60,5 +60,6 @@ type Msg =
 | ChangeOptions of RenderOptions
 | ChangeNode of Node
 | EdgeCandidate of Pos
+| CreateEdge of Id * Id
 | Layout
 

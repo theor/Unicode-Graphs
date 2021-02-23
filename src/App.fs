@@ -37,6 +37,14 @@ let update (msg:Msg) (model:Model) =
         { model with graph = GraphBuilder(model.graph).UpdateNode(n).Build() } |> layout
 //        |> (fun m -> if m.selectedId() = Some(n.guid) then {m with selectedNode})
     | EdgeCandidate pos -> { model with edgeCandidate = Some pos }
+    | CreateEdge(fromId, toId) ->
+        let {ownerNode=fromNode; index=fromIndex} = (Map.find fromId model.ports)
+        let {ownerNode=toNode; index=toIndex} = (Map.find toId model.ports)
+        { model with
+            graph = GraphBuilder(model.graph).AddEdge(fromNode, fromIndex, toNode, toIndex).Build()
+            edgeCandidate = None
+            deltaPos = None
+        } |> layout
     | _ -> failwithf "Message not implemented: %A" msg
 
 // App

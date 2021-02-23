@@ -92,7 +92,14 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
 
         JS.console.log("START POS", newPos)
         dispatch (SelectNode(newSelectedId, newPos))
-    | MouseState.Up -> dispatch <| SelectNode(model.selectedId, None)
+    | MouseState.Up ->
+        let pickedId = getId e
+        match model.selectedPort, model.edgeCandidate with
+        | Some from, Some _pos ->
+            match pickedId |> Option.bind (model.ports.TryFind) with
+            | Some targetPort -> dispatch (CreateEdge(from.guid, targetPort.port.guid))
+            | _ -> ()
+        | _ -> dispatch <| SelectNode(pickedId, None)
     | MouseState.Move when model.deltaPos.IsNone ->  ()
     | MouseState.Move ->
         let x,y = getCurrentCoords()
