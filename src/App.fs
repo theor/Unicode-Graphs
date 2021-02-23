@@ -11,11 +11,11 @@ open App.View
 let init() : Model =
     let gb = GraphBuilder()
     let a = gb.AddNode("A Node", (1,1), ["I1"], ["O1";"1234 1234 O2"])
-    let b = gb.AddNode("B Node", (25,1), ["BI --- 1"; "BI2"], ["BO1"])
-    let c = gb.AddNode("C Node", (15,1))
-    let d = gb.AddNode("D Node", (25,5))
-    gb.AddEdge(a, 0u,b, 1u)
-    gb.AddEdge(a, 1u,b, 0u)
+    let b = gb.AddNode("B Node", (25,1), ["BI"; "BI2"], ["BO1"])
+//    let c = gb.AddNode("C Node", (15,1))
+//    let d = gb.AddNode("D Node", (25,5))
+//    gb.AddEdge(a, 0u,b, 1u)
+//    gb.AddEdge(a, 1u,b, 0u)
 //    gb.AddNodeEdge(a,c)
 //    gb.AddNodeEdge(c,b)
 //    gb.AddNodeEdge(c,d)
@@ -36,6 +36,7 @@ let update (msg:Msg) (model:Model) =
     | ChangeNode n ->
         { model with graph = GraphBuilder(model.graph).UpdateNode(n).Build() } |> layout
 //        |> (fun m -> if m.selectedId() = Some(n.guid) then {m with selectedNode})
+    | EdgeCandidate pos -> { model with edgeCandidate = Some pos }
     | _ -> failwithf "Message not implemented: %A" msg
 
 // App

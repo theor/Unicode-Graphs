@@ -45,7 +45,11 @@ let layout (model:Model) =
     { model with
         options = {model.options with ActualCanvasWidth=w; ActualCanvasHeight=h}
         nodeSizes = nodeSizes
-        ports = model.graph.nodes |> Map.toSeq |> Seq.collect (fun (k,n) -> Seq.concat [n.inputs; n.outputs]) |> Seq.map (fun p -> (p.guid, p)) |> Map.ofSeq
+        ports = model.graph.nodes
+                |> Map.toSeq
+                |> Seq.map (fun (k,n) -> (n,Seq.concat [Seq.indexed n.inputs; Seq.indexed n.outputs]))
+                |> Seq.collect (fun (n,ports) -> ports |> Seq.map (fun (i,p) -> p.guid,{port=p; ownerNode=n.guid;index=uint i}))
+                |> Map.ofSeq
     }
 
 
@@ -75,37 +79,34 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
     match state with
     | MouseState.Down ->
         let pickedId = getId e
-        let newSelectedNode,newPos =  
+        let newSelectedId,newPos =  
             match pickedId |> Option.bind (model.graph.nodes.TryFind) with
             | None ->
                 match pickedId |> Option.bind (model.ports.TryFind) with
                 | None -> None,None
-                | Some p -> Some p.guid, Some <| getCurrentCoords() 
+                | Some p -> pickedId, Some <| getCurrentCoords() 
             | Some n ->
                 let x,y = getCurrentCoords() in
                 let nx,ny = n.pos in
-                let dx,dy = x-nx-(*ifBorderThenOne weird bug*)1, y-ny-ifBorderThenOne
-//                let size = Map.find n.guid model.nodeSizes
-                JS.console.log(dx, dy, Map.find n.guid model.nodeSizes)
-                match dx,dy with
-//                | _ when dx = 0 && dy > 0 ->
-//                    let port = List.tryItem (dy-1) n.inputs
-//                    Some port.Value.guid, Some(x,y)
-//                | _ when dx = size.W - 1 - 2 * ifBorderThenOne && dy > 0 ->
-//                    let port = List.tryItem (dy-1) n.outputs
-//                    Some port.Value.guid, Some(x,y)
-                | _ -> Some n.guid, Some (nx-x, ny-y)
+                pickedId, Some (nx-x, ny-y)
 
         JS.console.log("START POS", newPos)
-        dispatch (SelectNode(newSelectedNode, newPos))
+        dispatch (SelectNode(newSelectedId, newPos))
     | MouseState.Up -> dispatch <| SelectNode(model.selectedId, None)
     | MouseState.Move when model.deltaPos.IsNone ->  ()
     | MouseState.Move ->
-//         JS.console.log(e.clientX - graphElt.clientLeft, e.clientY - graphElt.clientTop, graphElt.clientWidth, graphElt.clientHeight)
-        model.selectedNode |> Option.iter (fun n ->
+        let x,y = getCurrentCoords()
+        match model with
+        | SelectedNode n ->
             let sx,sy = model.deltaPos.Value;
-            let x,y = getCurrentCoords()
-            dispatch <| Move(n.guid, (sx+x,sy+y)))
+            dispatch <| Move(n.guid, (sx+x,sy+y))
+        | SelectedPort p ->
+            dispatch <| EdgeCandidate (x,y)
+//         JS.console.log(e.clientX - graphElt.clientLeft, e.clientY - graphElt.clientTop, graphElt.clientWidth, graphElt.clientHeight)
+//        model.selectedNode |> Option.iter (fun n ->
+//            let sx,sy = model.deltaPos.Value;
+//            let x,y = getCurrentCoords()
+//            dispatch <| Move(n.guid, (sx+x,sy+y)))
             
     | _ -> failwith "todo"
 
@@ -115,7 +116,9 @@ let render dispatch (model:Model) =
     let ifBorderThenOne = if model.options.NodeBorders then 1 else 0
 
     let mutable b = Array.create (options.ActualCanvasWidth*options.ActualCanvasHeight) (emptyChar, Id.Default)
-    let set x y c (id:Id) = b.[x + y*options.ActualCanvasWidth] <- (c,id)
+    let set x y c (id:Id) =
+        if x + y*options.ActualCanvasWidth < b.Length then
+            b.[x + y*options.ActualCanvasWidth] <- (c,id)
     
     let renderLabel x y (s:string) (id:Id) =
         for i in 0..s.Length - 1 do
@@ -152,14 +155,9 @@ let render dispatch (model:Model) =
         let x = if isInput then r.X else (r.X+r.W)
         x,y
 
-    let renderEdge id (e:Edge) =
-        let fromNode, fromIndex = e.fromNode
-        let toNode, toIndex = e.toNode
-        let rf = model.nodeSizes.Item fromNode
-        let rt = model.nodeSizes.Item toNode
-        let mutable (i,j) = if not options.ShowPorts || fromIndex = UInt32.MaxValue then rf.Center else getPortPosition rf false fromIndex in
-        let rtx,rty =  if not options.ShowPorts || toIndex = UInt32.MaxValue then rt.Center else getPortPosition rt true toIndex
-        let edgeCenterX, edgeCenterY = (i+rtx)/2+e.offset, (j+rty)/2
+    let renderEdgeFromTo id rfx rfy rtx rty offset =
+        let mutable (i,j) = rfx,rfy
+        let edgeCenterX, edgeCenterY = (i+rtx)/2+offset, (j+rty)/2
         let dirX, dirY = sign (rtx-i), sign (rty-j)
         let needHorizontalMove = i <> edgeCenterX 
         
@@ -220,8 +218,30 @@ let render dispatch (model:Model) =
 //            if dy <> 0 then j <- j+sy
 //            ()
 
+    let renderEdge id (e:Edge) =
+        let fromNode, fromIndex = e.fromNode
+        let rf = model.nodeSizes.Item fromNode
+        let rfx,rfy = if not options.ShowPorts || fromIndex = UInt32.MaxValue then rf.Center else getPortPosition rf false fromIndex in
+
+        let toNode, toIndex = e.toNode
+        let rt = model.nodeSizes.Item toNode
+        let rtx,rty =  if not options.ShowPorts || toIndex = UInt32.MaxValue then rt.Center else getPortPosition rt true toIndex
+
+        renderEdgeFromTo id rfx rfy rtx rty e.offset
+
+    let renderEdgeCandidate (fromNode:Id) (fromIndex:uint) toX toY =
+        let rf = model.nodeSizes.Item fromNode
+        let rfx,rfy = if not options.ShowPorts || fromIndex = UInt32.MaxValue then rf.Center else getPortPosition rf false fromIndex in
+
+        renderEdgeFromTo (Id 0u) rfx rfy toX toY 0
+        
     g.nodes |> Map.iter renderNode
     g.edges |> Map.iter renderEdge
+    if model.selectedPort.IsSome then
+        model.edgeCandidate |> Option.iter (fun (x,y) ->
+            let {port=port;ownerNode=node;index=index} = Map.find model.selectedPort.Value.guid model.ports
+            renderEdgeCandidate node index x y
+        )
 
     seq {
         yield div [HTMLAttr.Id "graph-output"; ClassName "graph-output"
@@ -232,25 +252,28 @@ let render dispatch (model:Model) =
 
             (seq {
                 for line in Seq.chunkBySize options.ActualCanvasWidth b do
-                    let mutable (c,id) = line.[0]
-                    let mutable i = 1
-                    let mutable sb = StringBuilder(options.ActualCanvasWidth)
-                    sb <- sb.Append c
+                    match Array.tryItem 0 line with
+                    | None -> ()
+                    | Some(c,id) ->
+                        let mutable i = 1
+                        let mutable id = id
+                        let mutable sb = StringBuilder(options.ActualCanvasWidth)
+                        sb <- sb.Append c
 
-                    let lineContent = seq {
+                        let lineContent = seq {
 
-                        while i < line.Length do
-                            let c,nextId = line.[i]
-                            if id <> nextId then
-                                yield span (seq { yield Data("nid", id.Value); if model.selectedId = Some(id) then yield Class "selected" }) [str <| sb.ToString()]
-                                sb <- sb.Clear()
-                            sb <- sb.Append c
-                            id <- nextId
-                            i <- i + 1
-                        if sb.Length > 0 then
-                            yield span [ Data("nid", id.Value) ] [str <| sb.ToString()]
-                    }
-                    yield pre [] lineContent
+                            while i < line.Length do
+                                let c,nextId = line.[i]
+                                if id <> nextId then
+                                    yield span (seq { yield Data("nid", id.Value); if model.selectedId = Some(id) then yield Class "selected" }) [str <| sb.ToString()]
+                                    sb <- sb.Clear()
+                                sb <- sb.Append c
+                                id <- nextId
+                                i <- i + 1
+                            if sb.Length > 0 then
+                                yield span [ Data("nid", id.Value) ] [str <| sb.ToString()]
+                        }
+                        yield pre [] lineContent
                     })
         yield div [ HTMLAttr.Id "hidden-output" ] (
                 b |> Seq.map fst |> Seq.chunkBySize options.ActualCanvasWidth |> Seq.map (Seq.toArray >> String) |> Seq.map (fun s -> pre [] [str s])
