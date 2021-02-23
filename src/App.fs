@@ -40,8 +40,11 @@ let update (msg:Msg) (model:Model) =
     | CreateEdge(fromId, toId) ->
         let {ownerNode=fromNode; index=fromIndex} = (Map.find fromId model.ports)
         let {ownerNode=toNode; index=toIndex} = (Map.find toId model.ports)
+        let newGraph = if fromNode = toNode
+                       then model.graph
+                       else GraphBuilder(model.graph).AddEdge(fromNode, fromIndex, toNode, toIndex).Build()
         { model with
-            graph = GraphBuilder(model.graph).AddEdge(fromNode, fromIndex, toNode, toIndex).Build()
+            graph = newGraph
             edgeCandidate = None
             deltaPos = None
         } |> layout

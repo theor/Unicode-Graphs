@@ -12,10 +12,12 @@ open App.Types
 let emptyChar = '.'
 let portChar = "\u25CC"
 
+let hasTitle n = not <| String.IsNullOrWhiteSpace n.title
 let layout (model:Model) =
     let ifBordersThen2 = (if model.options.NodeBorders then 2 else 0)
     let mutable nodeSizes = Map.empty<Id,Rect>
     let measureNode guid n =
+        let titleHeight = if hasTitle n then 1 else 0
         let portWidth =
             if model.options.ShowPorts then
                 seq {
@@ -32,7 +34,7 @@ let layout (model:Model) =
         
         
         let nw,nh = n.title.Length + 2*model.options.Margin + ifBordersThen2,
-                    (if model.options.NodeBorders then 3 else 1) + if model.options.ShowPorts then Math.Max(n.inputs.Length, n.outputs.Length) else 0
+                    (if model.options.NodeBorders then 2 else 0) + titleHeight + if model.options.ShowPorts then Math.Max(n.inputs.Length, n.outputs.Length) else 0
         let nw = Math.Max(nw, portWidth)
         let x,y = n.pos
         nodeSizes <- Map.add guid (Rect.Create(x,y,nw,nh)) nodeSizes
@@ -145,20 +147,22 @@ let render dispatch (model:Model) =
                         | _,_ when i = 0 || i = r.W-1 -> '\u2502'  // left or right
                         | _ -> '.'
                 set (r.X+i)(r.Y+j) (if i = 0 || i = (r.W-1) || j = (r.H - 1) || j = 0 then c else ' ') guid
-        renderLabel (r.X + r.W / 2 - n.title.Length / 2)// (r.X  + options.Margin + if model.options.NodeBorders then 1 else 0)
-            (r.Y + ifBorderThenOne)
-            n.title guid
+        let titleHeight = if hasTitle n then 1 else 0
+        if hasTitle n then
+            renderLabel (r.X + r.W / 2 - n.title.Length / 2)// (r.X  + options.Margin + if model.options.NodeBorders then 1 else 0)
+                (r.Y + ifBorderThenOne)
+                n.title guid
 //        for i in 0.. n.title.Length-1 do
 //            set (r.X  + options.Margin + if model.options.NodeBorders then 1 else 0+ i)
 //                (r.Y + if model.options.NodeBorders then 1 else 0)
 //                n.title.[i] guid
         if model.options.ShowPorts then
-            n.inputs |> List.iteri (fun i p -> renderLabel (r.X+1) (r.Y + 1 + i + ifBorderThenOne) (portChar + p.title) p.guid)
-            n.outputs |> List.iteri (fun i p -> renderLabel (r.X + r.W - 2*ifBorderThenOne - p.title.Length) (r.Y + 1 + i + ifBorderThenOne) (p.title + portChar) p.guid)
+            n.inputs |> List.iteri (fun i p -> renderLabel (r.X+1) (r.Y + titleHeight + i + ifBorderThenOne) (portChar + p.title) p.guid)
+            n.outputs |> List.iteri (fun i p -> renderLabel (r.X + r.W - 2*ifBorderThenOne - p.title.Length) (r.Y + titleHeight + i + ifBorderThenOne) (p.title + portChar) p.guid)
         ()
         
     let getPortPosition (r:Rect) (isInput:bool) (index:uint) =
-        let y = r.Y + 1 + int index + ifBorderThenOne
+        let y = r.Y + (*if hasTitle n then 1 else 0*) 1 + int index + ifBorderThenOne
         let x = if isInput then r.X else (r.X+r.W)
         x,y
 
