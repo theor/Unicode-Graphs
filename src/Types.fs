@@ -25,6 +25,7 @@ type Model = {
     graph: Graph
     options: RenderOptions
     nodeSizes: Map<Id,Rect>
+    ports: Map<Id,Port>
     selectedId: Id option
     deltaPos: Pos option
 
@@ -32,11 +33,14 @@ type Model = {
     with
         member this.selectedNode: Node option =
             Option.bind (fun id -> this.graph.nodes |> Map.tryFind id) this.selectedId
+        member this.selectedPort: Port option = 
+            Option.bind (fun id -> this.ports |> Map.tryFind id) this.selectedId
 let newModel(g:Graph) =
     { graph=g
       options=RenderOptions.Default
       nodeSizes = Map.empty
       selectedId=None
+      ports = Map.empty
       /// Delta between node pos (top left corner) and actual mouse click (eg. the node center) used when moving a node
       deltaPos = None }
 type Msg =

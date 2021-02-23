@@ -44,7 +44,9 @@ let layout (model:Model) =
 //    JS.console.log(nodeSizes |> Map.toSeq |> Seq.map (fun (_,x) -> x) |> Seq.toArray, nodeSizes |> Map.toArray |> Array.map (fun (a,b) -> b.Center))
     { model with
         options = {model.options with ActualCanvasWidth=w; ActualCanvasHeight=h}
-        nodeSizes = nodeSizes}
+        nodeSizes = nodeSizes
+        ports = model.graph.nodes |> Map.toSeq |> Seq.collect (fun (k,n) -> Seq.concat [n.inputs; n.outputs]) |> Seq.map (fun p -> (p.guid, p)) |> Map.ofSeq
+    }
 
 
 [<RequireQualifiedAccess>]
@@ -68,11 +70,32 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
          let rect = graphElt.getBoundingClientRect()
          float model.options.ActualCanvasWidth * (e.clientX - rect.left) / rect.width |> int32,
          float model.options.ActualCanvasHeight * (e.clientY - rect.top) / rect.height |> int32
+    let ifBorderThenOne = if model.options.NodeBorders then 1 else 0
 
     match state with
     | MouseState.Down ->
-        let newSelectedNode = getId e
-        let newPos = newSelectedNode |> Option.bind (model.graph.nodes.TryFind) |> Option.map (fun n -> let x,y = getCurrentCoords() in let nx,ny = n.pos in nx-x, ny-y)
+        let pickedId = getId e
+        let newSelectedNode,newPos =  
+            match pickedId |> Option.bind (model.graph.nodes.TryFind) with
+            | None ->
+                match pickedId |> Option.bind (model.ports.TryFind) with
+                | None -> None,None
+                | Some p -> Some p.guid, Some <| getCurrentCoords() 
+            | Some n ->
+                let x,y = getCurrentCoords() in
+                let nx,ny = n.pos in
+                let dx,dy = x-nx-(*ifBorderThenOne weird bug*)1, y-ny-ifBorderThenOne
+//                let size = Map.find n.guid model.nodeSizes
+                JS.console.log(dx, dy, Map.find n.guid model.nodeSizes)
+                match dx,dy with
+//                | _ when dx = 0 && dy > 0 ->
+//                    let port = List.tryItem (dy-1) n.inputs
+//                    Some port.Value.guid, Some(x,y)
+//                | _ when dx = size.W - 1 - 2 * ifBorderThenOne && dy > 0 ->
+//                    let port = List.tryItem (dy-1) n.outputs
+//                    Some port.Value.guid, Some(x,y)
+                | _ -> Some n.guid, Some (nx-x, ny-y)
+
         JS.console.log("START POS", newPos)
         dispatch (SelectNode(newSelectedNode, newPos))
     | MouseState.Up -> dispatch <| SelectNode(model.selectedId, None)
@@ -120,8 +143,8 @@ let render dispatch (model:Model) =
 //                (r.Y + if model.options.NodeBorders then 1 else 0)
 //                n.title.[i] guid
         if model.options.ShowPorts then
-            n.inputs |> List.iteri (fun i p -> renderLabel (r.X+1) (r.Y + 1 + i + ifBorderThenOne) (portChar + p.title) guid)
-            n.outputs |> List.iteri (fun i p -> renderLabel (r.X + r.W - 2*ifBorderThenOne - p.title.Length) (r.Y + 1 + i + ifBorderThenOne) (p.title + portChar) guid)
+            n.inputs |> List.iteri (fun i p -> renderLabel (r.X+1) (r.Y + 1 + i + ifBorderThenOne) (portChar + p.title) p.guid)
+            n.outputs |> List.iteri (fun i p -> renderLabel (r.X + r.W - 2*ifBorderThenOne - p.title.Length) (r.Y + 1 + i + ifBorderThenOne) (p.title + portChar) p.guid)
         ()
         
     let getPortPosition (r:Rect) (isInput:bool) (index:uint) =
@@ -148,13 +171,13 @@ let render dispatch (model:Model) =
             
         // 1st corner
         match dirY with
-        | 0 -> set i j '\u2500' id
         | 1 ->
             set i j '\u2510' id
             j <- j + dirY
         | -1 ->
             set i j '\u2518' id
             j <- j + dirY
+        | _ -> set i j '\u2500' id
             
         // vertical bar until 2nd corner
         while j <> rty do
@@ -163,14 +186,14 @@ let render dispatch (model:Model) =
             
         // 2nd corner
         match dirY with
-        | 0 -> set i j '\u2500' id
         | 1 ->
             set i j '\u2514' id
             i <- i + dirX
         | -1 ->
             set i j '\u250c' id
             i <- i + dirX
-            
+        | _ -> set i j '\u2500' id
+        
         // from 2nd corner to other port
         
         if needHorizontalMove then

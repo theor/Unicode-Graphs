@@ -46,6 +46,7 @@ let view (model:Model) dispatch =
 
 
     let replace l idx x = List.mapi (fun i elt -> if i <> idx then elt else x) l
+    let selectedPortView (n:Graph.Port) = [ str <| sprintf "%A" n ]
     let selectedNodeView (n:Graph.Node) =
         let portView (dir:Direction) idx (p:Port) =
             div [Class "field is-horizontal"] [
@@ -99,4 +100,5 @@ let view (model:Model) dispatch =
         yield controlCheckbox "Show Ports" model.options.ShowPorts (fun b -> {model.options with ShowPorts = b})// (input [Class "input"; Type "number"; Value model.options.Margin; OnChange (dispatchChange (fun e o -> {o with Margin = int e.Value}))])
         yield control "Margin" (input [Class "input"; Type "number"; Value model.options.Margin; OnChange (dispatchChange (fun e o -> {o with Margin = int e.Value}))])
         if model.selectedNode.IsSome then yield! selectedNodeView model.selectedNode.Value
+        if model.selectedPort.IsSome then yield! selectedPortView model.selectedPort.Value
     })
