@@ -17,7 +17,7 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 5.0.x
-    - name: Install fable
-      run: dotnet tool install --global Fable
+    - name: Restore dependencies
+      run: dotnet tool restore
     - name: Build
       run: npm run build
