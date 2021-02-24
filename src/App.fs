@@ -33,6 +33,8 @@ let update (msg:Msg) (model:Model) =
         ignore <| gb.AddNode(title=title, id=id)
         {model with graph = gb.Build() } |> layout
     | ChangeOptions options -> { model with options = options } |> layout
+    | ChangeEdge n ->
+        { model with graph = GraphBuilder(model.graph).UpdateEdge(n).Build() } |> layout
     | ChangeNode n ->
         { model with graph = GraphBuilder(model.graph).UpdateNode(n).Build() } |> layout
 //        |> (fun m -> if m.selectedId() = Some(n.guid) then {m with selectedNode})

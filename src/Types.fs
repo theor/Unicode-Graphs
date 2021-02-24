@@ -35,6 +35,8 @@ type Model = {
     with
         member this.selectedNode: Node option =
             Option.bind (fun id -> this.graph.nodes |> Map.tryFind id) this.selectedId
+        member this.selectedEdge: Edge option =
+            Option.bind (fun id -> this.graph.edges |> Map.tryFind id) this.selectedId
         member this.selectedPort: Port option = 
              this.selectedId |> Option.bind (fun id -> this.ports |> Map.tryFind id)
              |> Option.map (fun x -> x.port)
@@ -64,6 +66,7 @@ type Msg =
 | SelectNode of Id option * Pos option
 | ChangeOptions of RenderOptions
 | ChangeNode of Node
+| ChangeEdge of Edge
 | EdgeCandidate of Pos
 | CreateEdge of Id * Id
 | Layout
