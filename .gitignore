@@ -2,3 +2,4 @@
 /src/obj/
 *.fs.js
 *.fs.js.map
+output/

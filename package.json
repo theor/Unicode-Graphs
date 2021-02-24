@@ -1,7 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "start": "dotnet fable watch src --sourceMaps --run webpack-dev-server"
+    "start": "dotnet fable watch src --sourceMaps --run webpack-dev-server",
+    "build": "dotnet fable src && webpack --mode production"
   },
   "devDependencies": {
     "webpack": "^4.46.0",
