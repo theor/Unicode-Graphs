@@ -18,7 +18,7 @@ type RenderOptions = {
             Margin=1
             ActualCanvasWidth=1
             ActualCanvasHeight=1
-            NodeBorders = false
+            NodeBorders = true
             ShowPorts = true
         }
 type PortEntry ={port:Port; ownerNode:Id; index:uint} 
@@ -38,6 +38,11 @@ type Model = {
         member this.selectedPort: Port option = 
              this.selectedId |> Option.bind (fun id -> this.ports |> Map.tryFind id)
              |> Option.map (fun x -> x.port)
+             
+        member this.getPortPosition (r:Rect) (isInput:bool) (index:uint) =
+            let y = r.Y + (*if hasTitle n then 1 else 0*) 1 + int index + (if this.options.NodeBorders then 1 else 0)
+            let x = if isInput then r.X else (r.X+r.W)
+            x,y
             
 let newModel(g:Graph) =
     { graph=g

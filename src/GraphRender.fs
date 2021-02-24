@@ -161,11 +161,6 @@ let render dispatch (model:Model) =
             n.outputs |> List.iteri (fun i p -> renderLabel (r.X + r.W - 2*ifBorderThenOne - p.title.Length) (r.Y + titleHeight + i + ifBorderThenOne) (p.title + portChar) p.guid)
         ()
         
-    let getPortPosition (r:Rect) (isInput:bool) (index:uint) =
-        let y = r.Y + (*if hasTitle n then 1 else 0*) 1 + int index + ifBorderThenOne
-        let x = if isInput then r.X else (r.X+r.W)
-        x,y
-
     let renderEdgeFromTo id rfx rfy rtx rty offset =
         let mutable (i,j) = rfx,rfy
         let edgeCenterX, edgeCenterY = (i+rtx)/2+offset, (j+rty)/2
@@ -232,17 +227,17 @@ let render dispatch (model:Model) =
     let renderEdge id (e:Edge) =
         let fromNode, fromIndex = e.fromNode
         let rf = model.nodeSizes.Item fromNode
-        let rfx,rfy = if not options.ShowPorts || fromIndex = UInt32.MaxValue then rf.Center else getPortPosition rf false fromIndex in
+        let rfx,rfy = if not options.ShowPorts || fromIndex = UInt32.MaxValue then rf.Center else model.getPortPosition rf false fromIndex in
 
         let toNode, toIndex = e.toNode
         let rt = model.nodeSizes.Item toNode
-        let rtx,rty =  if not options.ShowPorts || toIndex = UInt32.MaxValue then rt.Center else getPortPosition rt true toIndex
+        let rtx,rty =  if not options.ShowPorts || toIndex = UInt32.MaxValue then rt.Center else model.getPortPosition rt true toIndex
 
         renderEdgeFromTo id rfx rfy rtx rty e.offset
 
     let renderEdgeCandidate (fromNode:Id) (fromIndex:uint) toX toY =
         let rf = model.nodeSizes.Item fromNode
-        let rfx,rfy = if not options.ShowPorts || fromIndex = UInt32.MaxValue then rf.Center else getPortPosition rf false fromIndex in
+        let rfx,rfy = if not options.ShowPorts || fromIndex = UInt32.MaxValue then rf.Center else model.getPortPosition rf false fromIndex in
 
         renderEdgeFromTo (Id 0u) rfx rfy toX toY 0
         
