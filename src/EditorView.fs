@@ -10,6 +10,8 @@ let view (model:Model) dispatch =
         dispatch <| ChangeOptions (f e model.options)
     let dispatchNodeChange (f:Event -> Graph.Node) (e:Event) =
         dispatch <| ChangeNode (f e)
+    let dispatchEdgeChange (f:Event -> Graph.Edge) (e:Event) =
+        dispatch <| ChangeEdge (f e)
     let controlCheckbox (name:string) (value:bool) (setValue: bool -> RenderOptions) =
         div [Class "field"] [
             div [Class "control"] [
@@ -46,6 +48,12 @@ let view (model:Model) dispatch =
 
 
     let replace l idx x = List.mapi (fun i elt -> if i <> idx then elt else x) l
+    let selectedEdgeView (n:Graph.Edge) = [
+//        str <| sprintf "EDGE %u" n.id.Value
+        yield h2 [Class "title"] [str "Current Edge"]
+        yield control "Title" (input [Class "input"; Type "number"; Value n.offset; OnChange (dispatchEdgeChange (fun e -> {n with offset = e.Value |> int32}))])
+
+    ]
     let selectedNodeView (n:Graph.Node) =
         let portView (dir:Direction) idx (p:Port) =
             div [Class "field is-horizontal"] [

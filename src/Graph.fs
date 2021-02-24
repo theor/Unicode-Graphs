@@ -86,4 +86,7 @@ type GraphBuilder(g0:Graph) =
     member this.UpdateNode(node:Node): GraphBuilder =
         g <- {g with nodes = Map.change node.guid (fun _ -> Some node) g.nodes}
         this
+    member this.UpdateEdge(edge:Edge): GraphBuilder =
+        g <- {g with edges = Map.change edge.id (fun _ -> Some edge) g.edges}
+        this
     member this.Build() = g
