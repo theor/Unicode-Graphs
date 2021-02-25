@@ -22,7 +22,7 @@ let view (model:Model) dispatch =
             yield div [Class "columns"] [
               div [Class "column"]  (seq {
                 yield! GraphRender.render dispatch model
-                yield! GraphRender.render dispatch (GraphRender.layout {model with options = {model.options with NodeBorders = not model.options.NodeBorders} })
+//                yield! GraphRender.render dispatch (GraphRender.layout {model with options = {model.options with NodeBorders = not model.options.NodeBorders} })
               })
               div [Class "column"] [
                 App.EditorView.view model dispatch
