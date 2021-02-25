@@ -21,7 +21,13 @@ type RenderOptions = {
             NodeBorders = true
             ShowPorts = true
         }
-type PortEntry ={port:Port; ownerNode:Id; index:uint} 
+type PortEntry ={
+    port:Port
+    ownerNode:Id
+    index:uint
+    position:Pos
+    direction: Direction
+}
 type Model = {
     graph: Graph
     options: RenderOptions
@@ -37,15 +43,11 @@ type Model = {
             Option.bind (fun id -> this.graph.nodes |> Map.tryFind id) this.selectedId
         member this.selectedEdge: Edge option =
             Option.bind (fun id -> this.graph.edges |> Map.tryFind id) this.selectedId
-        member this.selectedPort: Port option = 
+        member this.selectedPort: Port option =
              this.selectedId |> Option.bind (fun id -> this.ports |> Map.tryFind id)
              |> Option.map (fun x -> x.port)
-             
-        member this.getPortPosition (r:Rect) (isInput:bool) (index:uint) =
-            let y = r.Y + (*if hasTitle n then 1 else 0*) 1 + int index + (if this.options.NodeBorders then 1 else 0)
-            let x = if isInput then r.X else (r.X+r.W)
-            x,y
-            
+
+
 let newModel(g:Graph) =
     { graph=g
       options=RenderOptions.Default
@@ -55,11 +57,11 @@ let newModel(g:Graph) =
       /// Delta between node pos (top left corner) and actual mouse click (eg. the node center) used when moving a node
       deltaPos = None
       edgeCandidate = None }
-    
+
 let (|SelectedNode|_|) (model : Model) = Option.bind (fun id -> model.graph.nodes |> Map.tryFind id) model.selectedId
 let (|SelectedEdge|_|) (model : Model) = Option.bind (fun id -> model.graph.edges |> Map.tryFind id) model.selectedId
 let (|SelectedPort|_|) (model : Model) = Option.bind (fun id -> model.ports |> Map.tryFind id) model.selectedId
-    
+
 type Msg =
 | Move of Id * Pos
 | AddNode of Id * string
@@ -69,5 +71,7 @@ type Msg =
 | ChangeEdge of Edge
 | EdgeCandidate of Pos
 | CreateEdge of Id * Id
+| Delete
+| Duplicate
 | Layout
 

@@ -76,6 +76,16 @@ type GraphBuilder(g0:Graph) =
        let guid = Option.defaultWith nextId id in
        g <- {g with edges = Map.add guid {id=guid; fromNode=(fromNode,fromIndex); toNode=(toNode,toIndex); isNodeEdge = true; offset=0} g.edges}
        this
+    member this.RemoveNode(id:Id) =
+        g <- {g with nodes = Map.remove id g.nodes}
+        this
+    member this.RemoveEdge(id:Id) =
+        g <- {g with edges = Map.remove id g.edges}
+        this
+    member this.AddNode(node:Node, ?id:Id) =
+        let guid = Option.defaultWith nextId id in
+        g <- { g with nodes = Map.add guid {node with guid = guid} g.nodes }
+        this
     member this.AddNode(?title: string, ?pos: Pos, ?inputs: string List, ?outputs: string List, ?id:Id) =
        let guid = Option.defaultWith nextId id in
        let n = { guid = guid

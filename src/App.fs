@@ -40,9 +40,9 @@ let update (msg:Msg) (model:Model) =
 //        |> (fun m -> if m.selectedId() = Some(n.guid) then {m with selectedNode})
     | EdgeCandidate pos -> { model with edgeCandidate = Some pos }
     | CreateEdge(fromId, toId) ->
-        let {ownerNode=fromNode; index=fromIndex} = (Map.find fromId model.ports)
-        let {ownerNode=toNode; index=toIndex} = (Map.find toId model.ports)
-        let newGraph = if fromNode = toNode
+        let {ownerNode=fromNode; index=fromIndex; direction=fromDir} = (Map.find fromId model.ports)
+        let {ownerNode=toNode; index=toIndex; direction=toDir} = (Map.find toId model.ports)
+        let newGraph = if fromNode = toNode || fromDir = toDir
                        then model.graph
                        else GraphBuilder(model.graph).AddEdge(fromNode, fromIndex, toNode, toIndex).Build()
         { model with
@@ -50,10 +50,22 @@ let update (msg:Msg) (model:Model) =
             edgeCandidate = None
             deltaPos = None
         } |> layout
+    | Duplicate -> match model with
+                    | SelectedNode n ->
+                        let x,y = n.pos
+                        {model with graph = GraphBuilder(model.graph).AddNode({n with pos = (x+1,y+1)}).Build()} |> layout
+    | Delete -> match model with
+                    | SelectedNode n -> {model with graph = GraphBuilder(model.graph).RemoveNode(n.guid).Build()} |> layout
+                    | SelectedEdge e -> {model with graph = GraphBuilder(model.graph).RemoveEdge(e.id).Build()} |> layout
     | _ -> failwithf "Message not implemented: %A" msg
 
 // App
 Program.mkSimple init update view
+|> Program.withSubscription (fun _ ->
+    Cmd.ofSub (fun dispatch ->
+        Browser.Dom.window.onkeydown <- (fun e ->
+            App.GraphRender.keyToMessage e |> Option.iter (fun x -> e.preventDefault(); dispatch x)
+        )))
 //|> Program.withReactSynchronous "elmish-app"
 |> Program.withReactBatched "elmish-app"
 #if DEBUG
