@@ -5,7 +5,7 @@ open Elmish.React
 open Elmish.Debug
 open App.Graph
 open App.Types
-open App.GraphRender
+open App.GraphLayout
 open App.View
 
 let init() : Model =
@@ -14,11 +14,11 @@ let init() : Model =
     let b = gb.AddNode("B Node", (25,1), ["BI"; "BI2"], ["BO1"])
 //    let c = gb.AddNode("C Node", (15,1))
 //    let d = gb.AddNode("D Node", (25,5))
-    gb.AddEdge(a, 0u,b, 1u)
-//    gb.AddEdge(a, 1u,b, 0u)
-//    gb.AddNodeEdge(a,c)
-//    gb.AddNodeEdge(c,b)
-//    gb.AddNodeEdge(c,d)
+    gb.AddEdge(a, 0u,b, 1u) |> ignore
+//    gb.AddEdge(a, 1u,b, 0u) |> ignore
+//    gb.AddNodeEdge(a,c) |> ignore
+//    gb.AddNodeEdge(c,b) |> ignore
+//    gb.AddNodeEdge(c,d) |> ignore
     newModel(gb.Build()) |> layout |> (fun m -> {m with selectedId = Some b})
 
 // UPDATE
@@ -54,9 +54,14 @@ let update (msg:Msg) (model:Model) =
                     | SelectedNode n ->
                         let x,y = n.pos
                         {model with graph = GraphBuilder(model.graph).AddNode({n with pos = (x+1,y+1)}).Build()} |> layout
+                    | _ -> model
     | Delete -> match model with
                     | SelectedNode n -> {model with graph = GraphBuilder(model.graph).RemoveNode(n.guid).Build()} |> layout
                     | SelectedEdge e -> {model with graph = GraphBuilder(model.graph).RemoveEdge(e.id).Build()} |> layout
+                    | _ -> model
+    | EndDragAndDrop -> { model with
+                            edgeCandidate = None
+                            deltaPos = None }
     | _ -> failwithf "Message not implemented: %A" msg
 
 // App
@@ -65,7 +70,9 @@ Program.mkSimple init update view
     Cmd.ofSub (fun dispatch ->
         Browser.Dom.window.onkeydown <- (fun e ->
             App.GraphRender.keyToMessage e |> Option.iter (fun x -> e.preventDefault(); dispatch x)
-        )))
+        )
+        Browser.Dom.window.onmouseup <- (fun _ -> dispatch EndDragAndDrop )
+    ))
 //|> Program.withReactSynchronous "elmish-app"
 |> Program.withReactBatched "elmish-app"
 #if DEBUG

@@ -12,67 +12,6 @@ open App.Types
 let emptyChar = '.'
 let portChar = "\u25CC"
 
-let hasTitle n = not <| String.IsNullOrWhiteSpace n.title
-let layout (model:Model) =
-    let ifBordersThen2 = (if model.options.NodeBorders then 2 else 0)
-    let mutable nodeSizes = Map.empty<Id,Rect>
-    let measureNode guid n =
-        let titleHeight = if hasTitle n then 1 else 0
-        let portWidth =
-            if model.options.ShowPorts then
-                seq {
-                    for i in 0..Math.Max(n.inputs.Length,n.outputs.Length)-1 do
-                        match List.tryItem i n.inputs, List.tryItem i n.outputs with
-                        | Some(a),Some(b) -> a.title.Length+b.title.Length+3 (* 2*port char + space between them*) + ifBordersThen2
-                        | Some(x),None | None,Some(x) -> x.title.Length+1+1 + ifBordersThen2
-                        | _ -> failwith "Impossible"
-                }
-//                |> Seq.map (fun x -> JS.console.log(x); x)
-                |> (fun l -> if Seq.isEmpty l then Seq.replicate 1 0 else l)
-                |> Seq.max
-            else 0
-
-
-        let nw,nh = n.title.Length + 2*model.options.Margin + ifBordersThen2,
-                    (if model.options.NodeBorders then 2 else 0) + titleHeight + if model.options.ShowPorts then Math.Max(n.inputs.Length, n.outputs.Length) else 0
-        let nw = Math.Max(nw, portWidth)
-        let x,y = n.pos
-        nodeSizes <- Map.add guid (Rect.Create(x,y,nw,nh)) nodeSizes
-    model.graph.nodes |> Map.iter measureNode
-    let maxW = 2 + (nodeSizes |> Map.fold (fun max _ n -> Math.Max(max, (n.X + n.W))) 0)
-    let maxH = 2 + (nodeSizes |> Map.fold (fun max _ n -> Math.Max(max, (n.Y + n.H))) 0)
-    let w = Option.defaultValue maxW model.options.CanvasWidth
-    let h = Option.defaultValue maxH model.options.CanvasHeight
-
-    let makePortEntry (node:Node) (index:int) (p:Port) (dir:Direction) =
-        let pos =
-            let r = Map.find node.guid nodeSizes
-            let y = r.Y + (if hasTitle node then 1 else 0) + int index + (if model.options.NodeBorders then 1 else 0)
-            let x = if dir = Direction.Input then r.X else (r.X+r.W)
-            x,y
-        {
-            port=p
-            ownerNode=node.guid
-            index=uint index
-            position= pos
-            direction = dir
-        }
-
-//    JS.console.log(nodeSizes |> Map.toSeq |> Seq.map (fun (_,x) -> x) |> Seq.toArray, nodeSizes |> Map.toArray |> Array.map (fun (a,b) -> b.Center))
-    { model with
-        options = {model.options with ActualCanvasWidth=w; ActualCanvasHeight=h}
-        nodeSizes = nodeSizes
-        ports = model.graph.nodes
-                |> Map.toSeq
-                |> Seq.map (fun (k,n) -> (n,Seq.concat [
-                    Seq.indexed n.inputs |> Seq.map (fun p -> p,Direction.Input)
-                    Seq.indexed n.outputs |> Seq.map (fun p -> p,Direction.Output)
-                ]))
-                |> Seq.collect (fun (n,ports) -> ports |> Seq.map (fun ((i,p),dir) -> p.guid, makePortEntry n i p dir))
-                |> Map.ofSeq
-    }
-
-
 [<RequireQualifiedAccess>]
 type MouseState = None | Down | Move | Up
 
@@ -94,7 +33,9 @@ let keyToMessage (e:KeyboardEvent): Msg option =
     | "d", true -> Some Duplicate
     | "Delete", _ -> Some Delete
     | _ -> None
+    
 let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:MouseEvent) =
+    e.preventDefault()
     let graphElt = e.currentTarget :?> HTMLElement
 
     let getCurrentCoords(): Pos =
@@ -125,7 +66,7 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
         | Some from, Some _pos ->
             match pickedId |> Option.bind (model.ports.TryFind) with
             | Some targetPort -> dispatch (CreateEdge(from.guid, targetPort.port.guid))
-            | _ -> ()
+            | _ -> dispatch <| SelectNode(pickedId, None)
         | _ -> dispatch <| SelectNode(pickedId, None)
     | MouseState.Move when model.deltaPos.IsNone ->  ()
     | MouseState.Move ->
@@ -172,8 +113,8 @@ let render dispatch (model:Model) =
                         | _,_ when i = 0 || i = r.W-1 -> '\u2502'  // left or right
                         | _ -> '.'
                 set (r.X+i)(r.Y+j) (if i = 0 || i = (r.W-1) || j = (r.H - 1) || j = 0 then c else ' ') guid
-        let titleHeight = if hasTitle n then 1 else 0
-        if hasTitle n then
+        let titleHeight = if GraphLayout.hasTitle n then 1 else 0
+        if GraphLayout.hasTitle n then
             renderLabel (r.X + r.W / 2 - n.title.Length / 2)// (r.X  + options.Margin + if model.options.NodeBorders then 1 else 0)
                 (r.Y + ifBorderThenOne)
                 n.title guid
@@ -229,26 +170,9 @@ let render dispatch (model:Model) =
             while i <> rtx do
                 set i j '\u2500' id
                 i <- i + dirX
-//        while i <> rtx || j <> rty do
-//
-//            let dx,dy = (rtx-i),(rty-j)
-//            let sx,sy = Math.Sign dx, Math.Sign dy
-//
-//            if not (Rect.contains (i,j) rf) && not (Rect.contains (i,j) rt)
-//            then
-//                let c = match sx,sy with
-//                         | 1, 1 | -1, -1 -> '\\'// '\u22F1'
-//                         | 1, -1 | -1, 1 -> '/'// '\u22F0'
-//                         | 0, -1 | 0, 1 -> '|'//'\u22ee'
-//                         | 1, 0 | -1, 0 -> '\u2500'// '\u22ef'
-//                         | _ -> 'o'
-//                set i j c id
-//
-//
-//            if dx <> 0 then i <- i+sx
-//            if dy <> 0 then j <- j+sy
-//            ()
+                
     let getPortPosition (nodeId:Id) (portIndex:uint) (dir:Direction): Pos =
+//        JS.console.log("Get port position", nodeId, portIndex, dir)
         let node = Map.find nodeId model.graph.nodes
         model.ports
         |> Map.find ((if dir = Direction.Input then node.inputs else node.outputs).Item (int portIndex)).guid

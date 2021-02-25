@@ -74,4 +74,5 @@ type Msg =
 | Delete
 | Duplicate
 | Layout
+| EndDragAndDrop
 

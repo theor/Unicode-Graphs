@@ -107,23 +107,22 @@ let view (model:Model) dispatch =
                 then { n with inputs = n.inputs @ [ newPort "new" ] }
                 else { n with outputs = n.outputs @ [ newPort "new" ] }
             )
-            div [Class "field is-grouped pull-right"][
-                button [ Class "button"; OnClick onClick] [ span [Class "icon"] [ i [Class "fas fa-plus"] [] ]; span [] [str <| sprintf "New %A" dir ] ]
-            ]
+            button [ Class "button"; OnClick onClick] [ span [Class "icon"] [ i [Class "fas fa-plus"] [] ]; span [] [str <| sprintf "New %A" dir ] ]
         [
             yield h2 [Class "title"] [str "Current Node"]
             yield control "Title" (input [Class "input"; Type "text"; Value n.title; OnChange (dispatchNodeChange (fun e -> {n with title = e.Value}))])
 
             yield article [Class "panel is-info"] [
-                yield div [Class "panel-heading"] [
-                    h4 [Style [Display DisplayOptions.InlineBlock]] [str <| sprintf "%i Inputs" (n.inputs.Length)]
-                    createPortButton Direction.Input
+                yield p [Class "panel-heading"] [
+                    str <| sprintf "%i Inputs" (n.inputs.Length)
                 ]
                 yield div [Class "panel-block"][createPortButton Direction.Input]
                 yield! n.inputs |> List.mapi (portView Direction.Input)
             ]
             yield article [Class "panel is-info"] [
-                yield p [Class "panel-heading"] [str <| sprintf "%i Outputs" (n.outputs.Length)]
+                yield p [Class "panel-heading"] [
+                    str <| sprintf "%i Outputs" (n.outputs.Length)
+                ]
                 yield div [Class "panel-block"][createPortButton Direction.Output]
                 yield! n.outputs |> List.mapi (portView Direction.Output)
             ]
