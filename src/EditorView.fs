@@ -35,7 +35,7 @@ let view (model:Model) dispatch =
                     div [Class "field has-addons  has-addons-right"] [
                         yield! controls
                     ]
-                    
+
                 ]
             ]
     let control (name:string) controlInput =
@@ -57,49 +57,80 @@ let view (model:Model) dispatch =
     ]
     let selectedNodeView (n:Graph.Node) =
         let portView (dir:Direction) idx (p:Port) =
-            div [Class "field is-horizontal"] [
-                div [Class "field-label is-normal"] [
-                    label [Class "label"] [str (string idx)]
-                ]
-                div [Class "field-body"] [
-                    div [Class "field is-narrow has-addons"] [
-                        div [Class "control"] [
-                            input [Class "input"; Type "text"; Value p.title; OnChange (dispatchNodeChange (fun e ->
+            a [Class "panel-block"] [
+                    span [Class "panel-icon"] [ i [classList [
+                        "fas",true; "fa-arrow-right",dir = Direction.Input; "fa-arrow-left", dir = Direction.Output
+                    ]; HTMLAttr.Custom ("aria-hidden", true)] [] ]
+//                    str"test"
+                    input [Class "input"; Type "text"; Value p.title; OnChange (dispatchNodeChange (fun e ->
                                 if dir = Direction.Input
                                 then {n with inputs = replace n.inputs idx {p with title = e.Value} }
                                 else {n with outputs = replace n.outputs idx {p with title = e.Value} }
-                                ))] 
-                        ]
-                        div [Class "control"] [
-                            button [ Class "button is-danger"; OnClick (dispatchNodeChange (fun _ ->
+                                ))]
+                    button [ Class "button is-danger"; OnClick (dispatchNodeChange (fun _ ->
                                 if dir = Direction.Input
                                 then {n with inputs = n.inputs |> List.indexed |> List.choose (fun (cidx,p) -> if cidx = idx then None else Some p) }
                                 else {n with outputs = n.outputs |> List.indexed |> List.choose (fun (cidx,p) -> if cidx = idx then None else Some p) }
                                 )) ] [
                                 span [Class "icon"] [ i [Class "fas fa-minus-circle"] [] ]
                             ]
-                        ]
-                    ]
-                    
-                ]
             ]
+//            div [Class "field is-horizontal"] [
+//                div [Class "field-label is-normal"] [
+//                    label [Class "label"] [str (string idx)]
+//                ]
+//                div [Class "field-body"] [
+//                    div [Class "field is-narrow has-addons"] [
+//                        div [Class "control"] [
+//                            input [Class "input"; Type "text"; Value p.title; OnChange (dispatchNodeChange (fun e ->
+//                                if dir = Direction.Input
+//                                then {n with inputs = replace n.inputs idx {p with title = e.Value} }
+//                                else {n with outputs = replace n.outputs idx {p with title = e.Value} }
+//                                ))]
+//                        ]
+//                        div [Class "control"] [
+//                            button [ Class "button is-danger"; OnClick (dispatchNodeChange (fun _ ->
+//                                if dir = Direction.Input
+//                                then {n with inputs = n.inputs |> List.indexed |> List.choose (fun (cidx,p) -> if cidx = idx then None else Some p) }
+//                                else {n with outputs = n.outputs |> List.indexed |> List.choose (fun (cidx,p) -> if cidx = idx then None else Some p) }
+//                                )) ] [
+//                                span [Class "icon"] [ i [Class "fas fa-minus-circle"] [] ]
+//                            ]
+//                        ]
+//                    ]
+//
+//                ]
+//            ]
         let createPortButton dir =
             let onClick = dispatchNodeChange (fun _ ->
                 if dir = Direction.Input
                 then { n with inputs = n.inputs @ [ newPort "new" ] }
                 else { n with outputs = n.outputs @ [ newPort "new" ] }
             )
-            div [Class "control"] [
-                    button [ Class "button is-right is-small is-primary"; OnClick onClick] [ span [Class "icon"] [ i [Class "fas fa-plus"] [] ]  ]
-                ]
+            div [Class "field is-grouped pull-right"][
+                button [ Class "button"; OnClick onClick] [ span [Class "icon"] [ i [Class "fas fa-plus"] [] ]; span [] [str <| sprintf "New %A" dir ] ]
+            ]
         [
             yield h2 [Class "title"] [str "Current Node"]
             yield control "Title" (input [Class "input"; Type "text"; Value n.title; OnChange (dispatchNodeChange (fun e -> {n with title = e.Value}))])
 
-            yield sectionLabelHorizontal "Inputs" [ createPortButton Direction.Input ]
-            yield! n.inputs |> List.mapi (portView Direction.Input)
-            yield sectionLabelHorizontal "Outputs" [ createPortButton Direction.Output ]
-            yield! n.outputs |> List.mapi (portView Direction.Output)  
+            yield article [Class "panel is-info"] [
+                yield div [Class "panel-heading"] [
+                    h4 [Style [Display DisplayOptions.InlineBlock]] [str <| sprintf "%i Inputs" (n.inputs.Length)]
+                    createPortButton Direction.Input
+                ]
+                yield div [Class "panel-block"][createPortButton Direction.Input]
+                yield! n.inputs |> List.mapi (portView Direction.Input)
+            ]
+            yield article [Class "panel is-info"] [
+                yield p [Class "panel-heading"] [str <| sprintf "%i Outputs" (n.outputs.Length)]
+                yield div [Class "panel-block"][createPortButton Direction.Output]
+                yield! n.outputs |> List.mapi (portView Direction.Output)
+            ]
+//            yield sectionLabelHorizontal "Inputs" [ createPortButton Direction.Input ]
+//            yield! n.inputs |> List.mapi (portView Direction.Input)
+//            yield sectionLabelHorizontal "Outputs" [ createPortButton Direction.Output ]
+//            yield! n.outputs |> List.mapi (portView Direction.Output)
         ]
 
     div [] (seq {
