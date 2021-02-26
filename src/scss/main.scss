@@ -18,17 +18,3 @@
   line-height: 100%;
   overflow: hidden;
 }
-#hidden-output {
-  width:5px;
-  height:5px;
-  user-select: all;
-  margin-top: 5px;
-  font-family: 'Courier New', monospace;
-  white-space: nowrap;
-  & > pre {
-    padding: 0;
-    line-height: 100%;
-    overflow: hidden;
-    
-  }
-}

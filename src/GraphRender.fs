@@ -255,7 +255,4 @@ let render dispatch (model:Model) =
                         }
                         yield pre [] lineContent
                     })
-        yield div [ HTMLAttr.Id "hidden-output" ] (
-                b |> Seq.map fst |> Seq.chunkBySize options.ActualCanvasWidth |> Seq.map (Seq.toArray >> String) |> Seq.map (fun s -> pre [] [str s])
-        )
     }

@@ -13,6 +13,7 @@ let view (model:Model) dispatch =
     let dispatchEdgeChange (f:Event -> Graph.Edge) (e:Event) =
         dispatch <| ChangeEdge (f e)
     let controlCheckbox (name:string) (value:bool) (setValue: bool -> RenderOptions) =
+        printfn "%s %b" name value
         div [Class "field"] [
             div [Class "control"] [
                 label [Class "checkbox"] [
@@ -132,6 +133,7 @@ let view (model:Model) dispatch =
 //            yield! n.outputs |> List.mapi (portView Direction.Output)
         ]
 
+    printfn "%A" model.options
     div [] (seq {
         yield h2 [Class "title"] [str "Options"]
         yield controlCheckbox "Show Node Borders" model.options.NodeBorders (fun b -> {model.options with NodeBorders = b})

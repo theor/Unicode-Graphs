@@ -66,6 +66,7 @@ let newNode () : Node =
         inputs = []
         outputs = []
     }
+    
 type GraphBuilder(g0:Graph) =
     let mutable g: Graph = g0
     new() = GraphBuilder(emptyGraph())
