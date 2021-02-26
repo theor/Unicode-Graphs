@@ -134,8 +134,9 @@ let view (model:Model) dispatch =
 
     div [] (seq {
         yield h2 [Class "title"] [str "Options"]
-        yield controlCheckbox "Node Borders" model.options.NodeBorders (fun b -> {model.options with NodeBorders = b})// (input [Class "input"; Type "number"; Value model.options.Margin; OnChange (dispatchChange (fun e o -> {o with Margin = int e.Value}))])
-        yield controlCheckbox "Show Ports" model.options.ShowPorts (fun b -> {model.options with ShowPorts = b})// (input [Class "input"; Type "number"; Value model.options.Margin; OnChange (dispatchChange (fun e o -> {o with Margin = int e.Value}))])
+        yield controlCheckbox "Show Node Borders" model.options.NodeBorders (fun b -> {model.options with NodeBorders = b})
+        yield controlCheckbox "Show Ports" model.options.ShowPorts (fun b -> {model.options with ShowPorts = b})
+        yield controlCheckbox "Show Debug Ids" model.options.ShowIds (fun b -> {model.options with ShowIds = b})
         yield control "Margin" (input [Class "input"; Type "number"; Value model.options.Margin; OnChange (dispatchChange (fun e o -> {o with Margin = int e.Value}))])
         if model.selectedNode.IsSome then yield! selectedNodeView model.selectedNode.Value
         if model.selectedPort.IsSome then yield! selectedPortView model.selectedPort.Value

@@ -97,11 +97,13 @@ let render dispatch (model:Model) =
             b.[x + y*options.ActualCanvasWidth] <- (c,id)
 
     let renderLabel x y (s:string) (id:Id) =
-//        for i in 0..s.Length - 1 do
-//            set (x+i) (y) s.[i] id
-        let sid = id.ToString()
-        for i in 0..sid.Length-1 do
-            set (x+i) (y) sid.[i] id
+        if not model.options.ShowIds then
+            for i in 0..s.Length - 1 do
+                set (x+i) (y) s.[i] id
+        else
+            let sid = id.ToString()
+            for i in 0..sid.Length-1 do
+                set (x+i) (y) sid.[i] id
 
     let renderNode guid n =
         let r = Map.find guid model.nodeSizes

@@ -9,6 +9,7 @@ type RenderOptions = {
     ActualCanvasWidth : int
     ActualCanvasHeight : int
     NodeBorders: bool
+    ShowIds: bool
     ShowPorts: bool
     Margin: int }
     with
@@ -18,7 +19,8 @@ type RenderOptions = {
             Margin=1
             ActualCanvasWidth=1
             ActualCanvasHeight=1
-            NodeBorders = true
+            NodeBorders = true 
+            ShowIds = false
             ShowPorts = true
         }
 type PortEntry ={
