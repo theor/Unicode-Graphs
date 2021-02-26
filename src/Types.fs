@@ -77,4 +77,6 @@ type Msg =
 | Duplicate
 | Layout
 | EndDragAndDrop
+| ReadClipboard
+| LoadJson of string
 

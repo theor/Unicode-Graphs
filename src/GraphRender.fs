@@ -9,7 +9,7 @@ open App.Geometry
 open App.Graph
 open App.Types
 
-let emptyChar = '.'
+let emptyChar = ' '
 let portChar = "\u25CC"
 
 [<RequireQualifiedAccess>]
