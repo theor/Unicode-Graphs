@@ -39,7 +39,7 @@ let cmdLayout m =
 let update (msg:Msg) (model:Model): Model * Cmd<Msg> =
     match msg with
     | Layout -> cmdLayout model
-    | Move(n, newPos) -> {model with graph = {model.graph with nodes = Map.change n (fun x -> { x.Value with pos = newPos } |> Some) model.graph.nodes}} |> layout, Cmd.none
+    | Move(n, newPos) -> {model with graph = {model.graph with nodes = Map.change n (fun x -> { x.Value with pos = newPos } |> Some) model.graph.nodes}} |> cmdLayout
     | SelectNode(n,startPos) -> {model with selectedId = n; deltaPos = startPos}, Cmd.none
     | AddNode(id, title) ->
         let gb = GraphBuilder(model.graph)
