@@ -64,6 +64,8 @@ let (|SelectedNode|_|) (model : Model) = Option.bind (fun id -> model.graph.node
 let (|SelectedEdge|_|) (model : Model) = Option.bind (fun id -> model.graph.edges |> Map.tryFind id) model.selectedId
 let (|SelectedPort|_|) (model : Model) = Option.bind (fun id -> model.ports |> Map.tryFind id) model.selectedId
 
+[<RequireQualifiedAccess>]
+type Format = Json | B64
 type Msg =
 | Move of Id * Pos
 | AddNode of Id * string
@@ -78,5 +80,5 @@ type Msg =
 | Layout
 | EndDragAndDrop
 | ReadClipboard
-| LoadJson of string
+| LoadJson of string * Format
 

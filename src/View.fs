@@ -23,11 +23,12 @@ navigator.permissions.query({name: $0})
 """)>]
 let requestPermission(perm:Permission): Promise<PermissionStatus> = jsNative
 
+
 let readClipboard (): Async<Msg> =
   async {
     let! p = Async.AwaitPromise <| requestPermission(Permission.ClipboardRead)
     let! text = Async.AwaitPromise <| Browser.Navigator.navigator.clipboard.Value.readText ()
-    return Msg.LoadJson text
+    return Msg.LoadJson(text, Format.Json)
   }
 
 let view (model:Model) dispatch =
@@ -44,6 +45,11 @@ let view (model:Model) dispatch =
       let! p = Async.AwaitPromise <| requestPermission(Permission.ClipboardWrite)
       do! Async.AwaitPromise <| Browser.Navigator.navigator.clipboard.Value.writeText content
     } |> Async.StartImmediate
+  let copyJsonToClipboard() =
+    let json = Serialization.toJson model
+    let b64 = Serialization.toBase64String json
+    JS.console.log("Base64", b64)
+    copyClipboard(Serialization.toJson model)
   let graphText() =
     Browser.Dom.document.querySelector("#graph-output").textContent
     |> Seq.chunkBySize model.options.ActualCanvasWidth
@@ -57,7 +63,7 @@ let view (model:Model) dispatch =
             yield p [Class "buttons"] [
               button [Class "button"; OnClick (fun _ -> dispatch (AddNode(Graph.nextId(), "New")))] [str "New Node"]
               button [ClassName "button is-primary"; OnClick (fun _ -> copyClipboard(graphText()))] [str "Copy Graph"]
-              button [ClassName "button is-primary"; OnClick (fun _ -> copyClipboard(Serialization.toJson model))] [str "Copy Json to clipboard"]
+              button [ClassName "button is-primary"; OnClick (fun _ -> copyJsonToClipboard())] [str "Copy Json to clipboard"]
               button [ClassName "button is-primary"; OnClick (fun _ -> dispatch Msg.ReadClipboard)] [str "Load Json from clipboard"]
             ]
             yield div [Class "columns"] [
