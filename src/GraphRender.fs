@@ -58,7 +58,7 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
                 let nx,ny = n.pos in
                 pickedId, Some (nx-x, ny-y)
 
-        JS.console.log("START POS", newPos)
+        JS.console.log("START POS", newPos, pickedId.ToString())
         dispatch (SelectNode(newSelectedId, newPos))
     | MouseState.Up ->
         let pickedId = getId e
@@ -77,6 +77,7 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
             dispatch <| Move(n.guid, (sx+x,sy+y))
         | SelectedPort p ->
             dispatch <| EdgeCandidate (x,y)
+        | _ -> ()
 //         JS.console.log(e.clientX - graphElt.clientLeft, e.clientY - graphElt.clientTop, graphElt.clientWidth, graphElt.clientHeight)
 //        model.selectedNode |> Option.iter (fun n ->
 //            let sx,sy = model.deltaPos.Value;
@@ -96,8 +97,11 @@ let render dispatch (model:Model) =
             b.[x + y*options.ActualCanvasWidth] <- (c,id)
 
     let renderLabel x y (s:string) (id:Id) =
-        for i in 0..s.Length - 1 do
-            set (x+i) (y) s.[i] id
+//        for i in 0..s.Length - 1 do
+//            set (x+i) (y) s.[i] id
+        let sid = id.ToString()
+        for i in 0..sid.Length-1 do
+            set (x+i) (y) sid.[i] id
 
     let renderNode guid n =
         let r = Map.find guid model.nodeSizes
@@ -172,27 +176,34 @@ let render dispatch (model:Model) =
                 i <- i + dirX
                 
     let getPortPosition (nodeId:Id) (portIndex:uint) (dir:Direction): Pos =
-//        JS.console.log("Get port position", nodeId, portIndex, dir)
+        
+        JS.console.log(sprintf "Get port position %A %A %A" nodeId portIndex dir)
         let node = Map.find nodeId model.graph.nodes
-        model.ports
-        |> Map.find ((if dir = Direction.Input then node.inputs else node.outputs).Item (int portIndex)).guid
-        |> (fun e -> e.position)
+        let portList = (if dir = Direction.Input then node.inputs else node.outputs)
+        let port = portList |> List.tryItem (int portIndex)
+        port
+        |> Option.map (fun x -> x.guid)
+        |> Option.bind (fun guid -> Map.tryFind guid model.ports)
+        |> Option.map (fun e -> e.position)
+        |> Option.defaultWith (fun () -> JS.console.error(sprintf "Cannot find %A port %A of node %A" dir portIndex nodeId); 0,0)
 
     let renderEdge id (e:Edge) =
         let fromNodeId, fromIndex = e.fromNode
-        let rf = model.nodeSizes.Item fromNodeId
-        let rfx,rfy = if not options.ShowPorts || fromIndex = UInt32.MaxValue
-                      then rf.Center
-                      else getPortPosition fromNodeId fromIndex Direction.Output
-
         let toNodeId, toIndex = e.toNode
-        let rt = model.nodeSizes.Item toNodeId
-        let rtx,rty =  if not options.ShowPorts || toIndex = UInt32.MaxValue
-                       then rt.Center
-                       else getPortPosition toNodeId toIndex Direction.Input
+        
+        Option.map2 (fun a b -> a,b) (Map.tryFind fromNodeId model.nodeSizes) (Map.tryFind toNodeId model.nodeSizes)
+        |> Option.iter (fun (rf,rt) ->
+            let rfx,rfy = if not options.ShowPorts || fromIndex = UInt32.MaxValue
+                          then rf.Center
+                          else getPortPosition fromNodeId fromIndex Direction.Output
+
+            let rtx,rty =  if not options.ShowPorts || toIndex = UInt32.MaxValue
+                           then rt.Center
+                           else getPortPosition toNodeId toIndex Direction.Input
 
 
-        renderEdgeFromTo id rfx rfy rtx rty e.offset
+            renderEdgeFromTo id rfx rfy rtx rty e.offset
+        )
 
     let renderEdgeCandidate (fromNode:Id) (fromIndex:uint) toX toY =
         let rf = model.nodeSizes.Item fromNode

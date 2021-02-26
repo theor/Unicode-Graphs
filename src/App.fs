@@ -53,7 +53,7 @@ let update (msg:Msg) (model:Model) =
     | Duplicate -> match model with
                     | SelectedNode n ->
                         let x,y = n.pos
-                        {model with graph = GraphBuilder(model.graph).AddNode({n with pos = (x+1,y+1)}).Build()} |> layout
+                        {model with graph = GraphBuilder(model.graph).DuplicateNode({n with pos = (x+1,y+1)}).Build()} |> layout
                     | _ -> model
     | Delete -> match model with
                     | SelectedNode n -> {model with graph = GraphBuilder(model.graph).RemoveNode(n.guid).Build()} |> layout

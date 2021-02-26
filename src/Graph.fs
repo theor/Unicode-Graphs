@@ -7,6 +7,7 @@ type Id = Id of uint
 with
     static member Default = Id 0u
     member this.Value = match this with Id(i) -> i
+    override this.ToString() = sprintf "#%u" this.Value
 // skip 1 as it's the reserved edge id
 let mutable next = 1u
 let nextId() =
@@ -74,7 +75,7 @@ type GraphBuilder(g0:Graph) =
        this
     member this.AddEdge(fromNode:Id, fromIndex:uint, toNode:Id, toIndex:uint, ?id:Id) =
        let guid = Option.defaultWith nextId id in
-       g <- {g with edges = Map.add guid {id=guid; fromNode=(fromNode,fromIndex); toNode=(toNode,toIndex); isNodeEdge = true; offset=0} g.edges}
+       g <- {g with edges = Map.add guid {id=guid; fromNode=(fromNode,fromIndex); toNode=(toNode,toIndex); isNodeEdge = false; offset=0} g.edges}
        this
     member this.RemoveNode(id:Id) =
         g <- {g with nodes = Map.remove id g.nodes}
@@ -82,9 +83,16 @@ type GraphBuilder(g0:Graph) =
     member this.RemoveEdge(id:Id) =
         g <- {g with edges = Map.remove id g.edges}
         this
-    member this.AddNode(node:Node, ?id:Id) =
+    member this.DuplicateNode(node:Node, ?id:Id) =
         let guid = Option.defaultWith nextId id in
-        g <- { g with nodes = Map.add guid {node with guid = guid} g.nodes }
+        let duplicatePort (p:Port) = {p with guid = nextId()}
+        let duplicate = {
+            node with
+                guid = guid
+                inputs = node.inputs |> List.map duplicatePort
+                outputs = node.outputs |> List.map duplicatePort
+        }
+        g <- { g with nodes = Map.add guid duplicate g.nodes }
         this
     member this.AddNode(?title: string, ?pos: Pos, ?inputs: string List, ?outputs: string List, ?id:Id) =
        let guid = Option.defaultWith nextId id in
