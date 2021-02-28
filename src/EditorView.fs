@@ -133,7 +133,7 @@ let view (model:Model) dispatch =
 //            yield! n.outputs |> List.mapi (portView Direction.Output)
         ]
 
-    printfn "%A" model.options
+//    printfn "%A" model.options
     div [] (seq {
         yield h2 [Class "title"] [str "Options"]
         yield controlCheckbox "Show Node Borders" model.options.NodeBorders (fun b -> {model.options with NodeBorders = b})

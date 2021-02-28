@@ -12,11 +12,11 @@ open App.View
 type Route = Home | Graph of string
 let init(initRoute: Route option) : Model * Cmd<Msg> =
     let route = initRoute |> Option.defaultValue Route.Home
-    printfn "Init Route: %A" route
-    
+//    printfn "Init Route: %A" route
+
     match route with
     | Route.Home ->
-    
+
         let gb = GraphBuilder()
         let a = gb.AddNode("", (1,1), [], ["O1"])
         let b = gb.AddNode("B Node", (25,1), ["BI"; "BI2"], ["BO1"])
