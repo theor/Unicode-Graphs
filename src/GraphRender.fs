@@ -17,6 +17,7 @@ type MouseState = None | Down | Move | Up
 
 let getId (e:MouseEvent): Id option =
     let elem = e.target :?> Browser.Types.HTMLElement
+    JS.console.log("Under cursor:", elem, e)
     if not <| JsInterop.isNullOrUndefined elem then
         match elem.dataset.Item "nid" with
         | "" | null -> None
@@ -28,12 +29,12 @@ let getNode (model:Model) (e:MouseEvent) : Node option =
     getId e |> Option.bind (fun id -> Map.tryFind id (model.graph.nodes))
 
 let keyToMessage (e:KeyboardEvent): Msg option =
-    JS.console.log(e.key, e.code, e.ctrlKey)
+//    JS.console.log(e.key, e.code, e.ctrlKey)
     match e.key, e.ctrlKey with
     | "d", true -> Some Duplicate
     | "Delete", _ -> Some Delete
     | _ -> None
-    
+
 let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:MouseEvent) =
     e.preventDefault()
     let graphElt = e.currentTarget :?> HTMLElement
@@ -62,10 +63,13 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
         dispatch (SelectNode(newSelectedId, newPos))
     | MouseState.Up ->
         let pickedId = getId e
+        JS.console.log("PICKED", pickedId)
         match model.selectedPort, model.edgeCandidate with
         | Some from, Some _pos ->
             match pickedId |> Option.bind (model.ports.TryFind) with
-            | Some targetPort -> dispatch (CreateEdge(from.guid, targetPort.port.guid))
+            | Some targetPort -> dispatch (if targetPort.direction = Direction.Output
+                                           then CreateEdge(from.guid, targetPort.port.guid)
+                                           else CreateEdge(targetPort.port.guid, from.guid))
             | _ -> dispatch <| SelectNode(pickedId, None)
         | _ -> dispatch <| SelectNode(pickedId, None)
     | MouseState.Move when model.deltaPos.IsNone ->  ()
@@ -176,9 +180,9 @@ let render dispatch (model:Model) =
             while i <> rtx do
                 set i j '\u2500' id
                 i <- i + dirX
-                
+
     let getPortPosition (nodeId:Id) (portIndex:uint) (dir:Direction): Pos =
-        
+
         JS.console.log(sprintf "Get port position %A %A %A" nodeId portIndex dir)
         let node = Map.find nodeId model.graph.nodes
         let portList = (if dir = Direction.Input then node.inputs else node.outputs)
@@ -192,7 +196,7 @@ let render dispatch (model:Model) =
     let renderEdge id (e:Edge) =
         let fromNodeId, fromIndex = e.fromNode
         let toNodeId, toIndex = e.toNode
-        
+
         Option.map2 (fun a b -> a,b) (Map.tryFind fromNodeId model.nodeSizes) (Map.tryFind toNodeId model.nodeSizes)
         |> Option.iter (fun (rf,rt) ->
             let rfx,rfy = if not options.ShowPorts || fromIndex = UInt32.MaxValue
@@ -207,20 +211,22 @@ let render dispatch (model:Model) =
             renderEdgeFromTo id rfx rfy rtx rty e.offset
         )
 
-    let renderEdgeCandidate (fromNode:Id) (fromIndex:uint) toX toY =
+    let renderEdgeCandidate (fromNode:Id) (fromIndex:uint) (fromDir:Direction) toX toY =
         let rf = model.nodeSizes.Item fromNode
         let rfx,rfy = if not options.ShowPorts || fromIndex = UInt32.MaxValue
                       then rf.Center
-                      else getPortPosition fromNode fromIndex Direction.Output
+                      else getPortPosition fromNode fromIndex fromDir
 
-        renderEdgeFromTo (Id 0u) rfx rfy toX toY 0
+        match fromDir with
+        | Direction.Output -> renderEdgeFromTo (Id 0u) rfx rfy toX toY 0
+        | Direction.Input -> renderEdgeFromTo (Id 0u) toX toY rfx rfy 0
 
     g.nodes |> Map.iter renderNode
     g.edges |> Map.iter renderEdge
     if model.selectedPort.IsSome then
         model.edgeCandidate |> Option.iter (fun (x,y) ->
-            let {port=port;ownerNode=node;index=index} = Map.find model.selectedPort.Value.guid model.ports
-            renderEdgeCandidate node index x y
+            let {direction=direction;ownerNode=node;index=index} = Map.find model.selectedPort.Value.guid model.ports
+            renderEdgeCandidate node index direction x y
         )
 
     seq {
