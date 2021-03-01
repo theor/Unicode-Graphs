@@ -19,7 +19,7 @@ type RenderOptions = {
             Margin=1
             ActualCanvasWidth=1
             ActualCanvasHeight=1
-            NodeBorders = true 
+            NodeBorders = true
             ShowIds = false
             ShowPorts = true
         }
@@ -35,6 +35,7 @@ type Model = {
     options: RenderOptions
     nodeSizes: Map<Id,Rect>
     ports: Map<Id,PortEntry>
+    highlightedId: Id option
     selectedId: Id option
     deltaPos: Pos option
     edgeCandidate: Pos option
@@ -55,6 +56,7 @@ let newModel(g:Graph) =
       options=RenderOptions.Default
       nodeSizes = Map.empty
       selectedId=None
+      highlightedId=None
       ports = Map.empty
       /// Delta between node pos (top left corner) and actual mouse click (eg. the node center) used when moving a node
       deltaPos = None
@@ -74,6 +76,7 @@ type Msg =
 | ChangeNode of Node
 | ChangeEdge of Edge
 | EdgeCandidate of Pos
+| Highlight of Id option
 | CreateEdge of Id * Id
 | Delete
 | Duplicate

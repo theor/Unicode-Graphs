@@ -75,6 +75,8 @@ let update (msg:Msg) (model:Model): Model * Cmd<Msg> =
     | EndDragAndDrop -> { model with
                             edgeCandidate = None
                             deltaPos = None }, Cmd.none
+    | Highlight id -> { model with
+                            highlightedId = id }, Cmd.none
     | ReadClipboard -> printfn "READ CLIP"; model, Cmd.OfAsync.result (App.View.readClipboard ())
     | LoadJson(data, format) ->
         let json = match format with | Format.Json -> data | Format.B64 -> App.Serialization.fromBase64String data

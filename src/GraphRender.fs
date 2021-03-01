@@ -17,7 +17,7 @@ type MouseState = None | Down | Move | Up
 
 let getId (e:MouseEvent): Id option =
     let elem = e.target :?> Browser.Types.HTMLElement
-    JS.console.log("Under cursor:", elem, e)
+//    JS.console.log("Under cursor:", elem, e)
     if not <| JsInterop.isNullOrUndefined elem then
         match elem.dataset.Item "nid" with
         | "" | null -> None
@@ -59,11 +59,11 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
                 let nx,ny = n.pos in
                 pickedId, Some (nx-x, ny-y)
 
-        JS.console.log("START POS", newPos, pickedId.ToString())
+//        JS.console.log("START POS", newPos, pickedId.ToString())
         dispatch (SelectNode(newSelectedId, newPos))
     | MouseState.Up ->
         let pickedId = getId e
-        JS.console.log("PICKED", pickedId)
+//        JS.console.log("PICKED", pickedId)
         match model.selectedPort, model.edgeCandidate with
         | Some from, Some _pos ->
             match pickedId |> Option.bind (model.ports.TryFind) with
@@ -72,7 +72,9 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
                                            else CreateEdge(from.guid, targetPort.port.guid))
             | _ -> dispatch <| SelectNode(pickedId, None)
         | _ -> dispatch <| SelectNode(pickedId, None)
-    | MouseState.Move when model.deltaPos.IsNone ->  ()
+    | MouseState.Move when model.deltaPos.IsNone ->
+        let pickedId = getId e
+        dispatch <| Highlight pickedId
     | MouseState.Move ->
         let x,y = getCurrentCoords()
         match model with
@@ -182,8 +184,7 @@ let render dispatch (model:Model) =
                 i <- i + dirX
 
     let getPortPosition (nodeId:Id) (portIndex:uint) (dir:Direction): Pos =
-
-        JS.console.log(sprintf "Get port position %A %A %A" nodeId portIndex dir)
+//        JS.console.log(sprintf "Get port position %A %A %A" nodeId portIndex dir)
         let node = Map.find nodeId model.graph.nodes
         let portList = (if dir = Direction.Input then node.inputs else node.outputs)
         let port = portList |> List.tryItem (int portIndex)
@@ -251,7 +252,11 @@ let render dispatch (model:Model) =
                             while i < line.Length do
                                 let c,nextId = line.[i]
                                 if id <> nextId then
-                                    yield span (seq { yield Data("nid", id.Value); if model.selectedId = Some(id) then yield Class "selected" }) [str <| sb.ToString()]
+                                    yield span (seq {
+                                        yield Data("nid", id.Value)
+                                        if model.selectedId = Some(id) then yield Class "selected has-text-primary"
+                                        if model.highlightedId = Some(id) then yield Class "highlighted has-text-info"
+                                    }) [str <| sb.ToString()]
                                     sb <- sb.Clear()
                                 sb <- sb.Append c
                                 id <- nextId
