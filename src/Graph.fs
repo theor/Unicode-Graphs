@@ -8,11 +8,6 @@ with
     static member Default = Id 0u
     member this.Value = match this with Id(i) -> i
     override this.ToString() = sprintf "#%u" this.Value
-// skip 1 as it's the reserved edge id
-let mutable next = 1u
-let nextId() =
-    next <- next + 1u
-    Id next
 
 [<Struct>]
 type Port = {
@@ -50,32 +45,44 @@ let emptyGraph(): Graph = {
     nodes= Map.empty
     edges= Map.empty
 }
-
-let newPort (title: string) : Port =
-    let guid = nextId() in
-    {
-        guid= guid
-        title = title
-    }
-let newNode () : Node =
-    let guid = nextId() in
-    {
-        guid = guid
-        title = guid.ToString()
-        pos = 0,0
-        inputs = []
-        outputs = []
-    }
     
+let getMaxId(g:Graph):uint =
+    let maxOrDefault defaultValue s = if Seq.isEmpty s then defaultValue else s |> Seq.max
+    let maxMap (m:Map<Id,_>) = m |> Map.toSeq |>Seq.map(fun (i,_) -> i.Value) |> maxOrDefault 0u
+    let maxEdge = maxMap g.edges
+    let maxNode = g.nodes |> Map.toSeq |> Seq.collect (fun (i,n) -> [yield i.Value; yield! (Seq.concat [n.inputs; n.outputs] |> Seq.map (fun p -> p.guid.Value))])
+                  |> maxOrDefault 0u
+    max maxEdge maxNode
 type GraphBuilder(g0:Graph) =
     let mutable g: Graph = g0
+    let mutable next: uint = getMaxId(g0)
+    
+    member this.nextId() = 
+        next <- next + 1u
+        Id next
     new() = GraphBuilder(emptyGraph())
+
+    member this.newPort (title: string) : Port =
+        let guid = this.nextId() in
+        {
+            guid= guid
+            title = title
+        }
+    member this.newNode () : Node =
+        let guid = this.nextId() in
+        {
+            guid = guid
+            title = guid.ToString()
+            pos = 0,0
+            inputs = []
+            outputs = []
+        }
     member this.AddNodeEdge(fromNode:Id, toNode:Id, ?id:Id) =
-       let guid = Option.defaultWith nextId id in
+       let guid = Option.defaultWith this.nextId id in
        g <- {g with edges = Map.add guid {id=guid; fromNode=(fromNode,UInt32.MaxValue); toNode=(toNode,UInt32.MaxValue); isNodeEdge = true; offset=0} g.edges}
        this
     member this.AddEdge(fromNode:Id, fromIndex:uint, toNode:Id, toIndex:uint, ?id:Id) =
-       let guid = Option.defaultWith nextId id in
+       let guid = Option.defaultWith this.nextId id in
        g <- {g with edges = Map.add guid {id=guid; fromNode=(fromNode,fromIndex); toNode=(toNode,toIndex); isNodeEdge = false; offset=0} g.edges}
        this
     member this.RemoveNode(id:Id) =
@@ -85,23 +92,23 @@ type GraphBuilder(g0:Graph) =
         g <- {g with edges = Map.remove id g.edges}
         this
     member this.DuplicateNode(node:Node, ?id:Id) =
-        let guid = Option.defaultWith nextId id in
-        let duplicatePort (p:Port) = {p with guid = nextId()}
+        let guid = Option.defaultWith this.nextId id in
+        let duplicatePort (p:Port) = {p with guid = this.nextId()}
         let duplicate = {
             node with
                 guid = guid
                 inputs = node.inputs |> List.map duplicatePort
-                outputs = node.outputs |> List.map duplicatePort
+                outputs = node.outputs |> List.map duplicatePort 
         }
         g <- { g with nodes = Map.add guid duplicate g.nodes }
         this
     member this.AddNode(?title: string, ?pos: Pos, ?inputs: string List, ?outputs: string List, ?id:Id) =
-       let guid = Option.defaultWith nextId id in
+       let guid = Option.defaultWith this.nextId id in
        let n = { guid = guid
                  title = defaultArg title (guid.ToString())
                  pos = defaultArg pos (0,0)
-                 inputs = defaultArg inputs [] |> List.map newPort
-                 outputs = defaultArg outputs [] |> List.map newPort }
+                 inputs = defaultArg inputs [] |> List.map this.newPort
+                 outputs = defaultArg outputs [] |> List.map this.newPort }
        g <- { g with nodes = Map.add n.guid n g.nodes }
        n.guid
     member this.UpdateNode(node:Node): GraphBuilder =

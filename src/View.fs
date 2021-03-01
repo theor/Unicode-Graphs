@@ -61,7 +61,7 @@ let view (model:Model) dispatch =
         div [ Class "container" ]
           (seq {
             yield p [Class "buttons"] [
-              button [Class "button"; OnClick (fun _ -> dispatch (AddNode(Graph.nextId(), "New")))] [str "New Node"]
+              button [Class "button"; OnClick (fun _ -> dispatch (AddNode(Graph.GraphBuilder(model.graph).nextId(), "New")))] [str "New Node"]
               button [ClassName "button is-primary"; OnClick (fun _ -> copyClipboard(graphText()))] [str "Copy Graph"]
               button [ClassName "button is-primary"; OnClick (fun _ -> copyJsonToClipboard())] [str "Copy Json to clipboard"]
               button [ClassName "button is-primary"; OnClick (fun _ -> dispatch Msg.ReadClipboard)] [str "Load Json from clipboard"]

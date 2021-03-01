@@ -105,8 +105,8 @@ let view (model:Model) dispatch =
         let createPortButton dir =
             let onClick = dispatchNodeChange (fun _ ->
                 if dir = Direction.Input
-                then { n with inputs = n.inputs @ [ newPort "new" ] }
-                else { n with outputs = n.outputs @ [ newPort "new" ] }
+                then { n with inputs = n.inputs @ [ GraphBuilder(model.graph).newPort "new" ] }
+                else { n with outputs = n.outputs @ [ GraphBuilder(model.graph).newPort "new" ] }
             )
             button [ Class "button"; OnClick onClick] [ span [Class "icon"] [ i [Class "fas fa-plus"] [] ]; span [] [str <| sprintf "New %A" dir ] ]
         [
