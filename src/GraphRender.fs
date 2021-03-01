@@ -68,8 +68,8 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
         | Some from, Some _pos ->
             match pickedId |> Option.bind (model.ports.TryFind) with
             | Some targetPort -> dispatch (if targetPort.direction = Direction.Output
-                                           then CreateEdge(from.guid, targetPort.port.guid)
-                                           else CreateEdge(targetPort.port.guid, from.guid))
+                                           then CreateEdge(targetPort.port.guid, from.guid)
+                                           else CreateEdge(from.guid, targetPort.port.guid))
             | _ -> dispatch <| SelectNode(pickedId, None)
         | _ -> dispatch <| SelectNode(pickedId, None)
     | MouseState.Move when model.deltaPos.IsNone ->  ()
@@ -219,7 +219,7 @@ let render dispatch (model:Model) =
 
         match fromDir with
         | Direction.Output -> renderEdgeFromTo (Id 0u) rfx rfy toX toY 0
-        | Direction.Input -> renderEdgeFromTo (Id 0u) toX toY rfx rfy 0
+        | Direction.Input -> renderEdgeFromTo (Id 0u) (toX+1) toY rfx rfy 0
 
     g.nodes |> Map.iter renderNode
     g.edges |> Map.iter renderEdge
