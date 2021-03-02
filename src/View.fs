@@ -4,15 +4,16 @@ open Elmish
 open Fable.Core
 open Fable.Core.JS
 open Fable.Core.JsInterop
+open Fable.Import
 open Fable.React
 open Fable.React.Props
 
 
 [<StringEnum; RequireQualifiedAccess>]
-type PermissionStatusState = Granted | Denied | Prompt 
+type PermissionStatusState = Granted | Denied | Prompt
 type PermissionStatus =
   abstract state: PermissionStatusState with get
-  
+
 [<StringEnum; RequireQualifiedAccess>]
 type Permission =
   | [<CompiledName("clipboard-write")>] ClipboardWrite
@@ -33,7 +34,7 @@ let readClipboard (): Async<Msg> =
 
 let view (model:Model) dispatch =
   let doCopy () =
-    
+
     let r = Browser.Dom.document.createRange()
 //    r.selectNode text
     Browser.Dom.window.getSelection().removeAllRanges();
@@ -51,11 +52,13 @@ let view (model:Model) dispatch =
     JS.console.log("Base64", b64)
     copyClipboard(Serialization.toJson model)
   let graphText() =
-    Browser.Dom.document.querySelector("#graph-output").textContent
-    |> Seq.chunkBySize model.options.ActualCanvasWidth
-    |> Seq.map System.String
-    |> String.concat "\n"
-    
+    let gr =
+      Browser.Dom.document.querySelector("#graph-output").textContent
+      |> Seq.chunkBySize model.options.ActualCanvasWidth
+      |> Seq.map System.String
+      |> String.concat "\n"
+    sprintf "%s\n%s" Browser.Dom.window.location.href gr
+
   div [] [
       section [ Class "section" ] [
         div [ Class "container" ]

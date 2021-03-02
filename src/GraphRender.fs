@@ -77,12 +77,14 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
         dispatch <| Highlight pickedId
     | MouseState.Move ->
         let x,y = getCurrentCoords()
+        let pickedId = getId e
+
         match model with
         | SelectedNode n ->
             let sx,sy = model.deltaPos.Value;
             dispatch <| Move(n.guid, (sx+x,sy+y))
-        | SelectedPort p ->
-            dispatch <| EdgeCandidate (x,y)
+        | SelectedPort _ ->
+            dispatch <| EdgeCandidate ((x,y), pickedId)
         | _ -> ()
 //         JS.console.log(e.clientX - graphElt.clientLeft, e.clientY - graphElt.clientTop, graphElt.clientWidth, graphElt.clientHeight)
 //        model.selectedNode |> Option.iter (fun n ->
@@ -255,7 +257,7 @@ let render dispatch (model:Model) =
                                     yield span (seq {
                                         yield Data("nid", id.Value)
                                         if model.selectedId = Some(id) then yield Class "selected has-text-primary"
-                                        if model.highlightedId = Some(id) then yield Class "highlighted has-text-info"
+                                        if model.highlightedId = Some(id) && model.highlightedId <> model.selectedId then yield Class "highlighted has-text-info"
                                     }) [str <| sb.ToString()]
                                     sb <- sb.Clear()
                                 sb <- sb.Append c

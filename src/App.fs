@@ -51,7 +51,7 @@ let update (msg:Msg) (model:Model): Model * Cmd<Msg> =
     | ChangeNode n ->
         { model with graph = GraphBuilder(model.graph).UpdateNode(n).Build() } |> cmdLayout
 //        |> (fun m -> if m.selectedId() = Some(n.guid) then {m with selectedNode})
-    | EdgeCandidate pos -> { model with edgeCandidate = Some pos }, Cmd.none
+    | EdgeCandidate(pos, highlightedId) -> { model with edgeCandidate = Some pos; highlightedId=highlightedId }, Cmd.none
     | CreateEdge(fromId, toId) ->
         let {ownerNode=fromNode; index=fromIndex; direction=fromDir} = (Map.find fromId model.ports)
         let {ownerNode=toNode; index=toIndex; direction=toDir} = (Map.find toId model.ports)

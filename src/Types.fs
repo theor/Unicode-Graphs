@@ -75,7 +75,7 @@ type Msg =
 | ChangeOptions of RenderOptions
 | ChangeNode of Node
 | ChangeEdge of Edge
-| EdgeCandidate of Pos
+| EdgeCandidate of Pos * Id option
 | Highlight of Id option
 | CreateEdge of Id * Id
 | Delete
