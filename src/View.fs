@@ -24,73 +24,96 @@ navigator.permissions.query({name: $0})
 """)>]
 let requestPermission(perm:Permission): Promise<PermissionStatus> = jsNative
 
-
 let readClipboard (): Async<Msg> =
   async {
     let! p = Async.AwaitPromise <| requestPermission(Permission.ClipboardRead)
     let! text = Async.AwaitPromise <| Browser.Navigator.navigator.clipboard.Value.readText ()
     return Msg.LoadJson(text, Format.Json)
   }
+let menuItem label onClick =
+    a [ Class "button"
+        OnClick (fun _ -> onClick())
+    ] [str label]
+
+let copyClipboard (content:string) =
+  async {
+    let! _ = Async.AwaitPromise <| requestPermission(Permission.ClipboardWrite)
+    do! Async.AwaitPromise <| Browser.Navigator.navigator.clipboard.Value.writeText content
+  } |> Async.StartImmediate
+let copyJsonToClipboard model =
+  let json = Serialization.toJson model
+  let b64 = Serialization.toBase64String json
+  JS.console.log("Base64", b64)
+  copyClipboard(Serialization.toJson model)
+let graphText model =
+  let gr =
+    Browser.Dom.document.querySelector("#graph-output").textContent
+    |> Seq.chunkBySize model.options.ActualCanvasWidth
+    |> Seq.map System.String
+    |> String.concat "\n"
+  sprintf "%s\n%s" Browser.Dom.window.location.href gr
+
+let navbarView model dispatch =
+   nav [ClassName "navbar is-link"] [
+    div [ClassName "navbar-brand"] [
+      a [ClassName "navbar-item "] [
+
+        span [Class "icon"] [
+          i [Class "fa fa-project-diagram"] []
+        ]
+        span [] [str "Unicode Graphs"]
+      ]
+      div [ClassName "navbar-item"] [
+        div [ClassName "buttons"] [
+          button [Class "button"
+                  OnClick (fun _ -> dispatch (AddNode(Graph.GraphBuilder(model.graph).nextId(), "New")))
+          ] [
+
+            span [Class "icon"] [
+              i [Class "fa fa-plus"] []
+            ]
+            span [] [str "New Node"]
+          ]
+        ]
+      ]
+      div [
+        ClassName "navbar-burger"
+        OnClick (fun _ -> dispatch ToggleBurger)
+      ] [
+        span [] []
+        span [] []
+        span [] []
+      ]
+    ]
+    div [classList ["navbar-menu", true; "is-active", model.isBurgerOpen]] [
+      div [ClassName "navbar-start"] [
+      ]
+      div [ClassName "navbar-end"] [
+        div [ClassName "navbar-item"] [
+          div [ClassName "buttons"] [
+            menuItem  "Copy Graph" (fun _ -> copyClipboard(graphText model))
+            menuItem  "Copy Json to clipboard" (fun _ -> copyJsonToClipboard model)
+            menuItem  "Load Json from clipboard" (fun _ -> dispatch Msg.ReadClipboard)
+          ]
+        ]
+      ]
+    ]
+  ]
 
 let view (model:Model) dispatch =
-  let doCopy () =
-
-    let r = Browser.Dom.document.createRange()
-//    r.selectNode text
-    Browser.Dom.window.getSelection().removeAllRanges();
-    Browser.Dom.window.getSelection().addRange(r)
-    Browser.Dom.document.execCommand("Copy") |> ignore
-    ()
-  let copyClipboard (content:string) =
-    async {
-      let! p = Async.AwaitPromise <| requestPermission(Permission.ClipboardWrite)
-      do! Async.AwaitPromise <| Browser.Navigator.navigator.clipboard.Value.writeText content
-    } |> Async.StartImmediate
-  let copyJsonToClipboard() =
-    let json = Serialization.toJson model
-    let b64 = Serialization.toBase64String json
-    JS.console.log("Base64", b64)
-    copyClipboard(Serialization.toJson model)
-  let graphText() =
-    let gr =
-      Browser.Dom.document.querySelector("#graph-output").textContent
-      |> Seq.chunkBySize model.options.ActualCanvasWidth
-      |> Seq.map System.String
-      |> String.concat "\n"
-    sprintf "%s\n%s" Browser.Dom.window.location.href gr
-
   div [] [
+      navbarView model dispatch
       section [ Class "section" ] [
-        div [ Class "container" ]
-          (seq {
-            yield p [Class "buttons"] [
-              button [Class "button"; OnClick (fun _ -> dispatch (AddNode(Graph.GraphBuilder(model.graph).nextId(), "New")))] [str "New Node"]
-              button [ClassName "button is-primary"; OnClick (fun _ -> copyClipboard(graphText()))] [str "Copy Graph"]
-              button [ClassName "button is-primary"; OnClick (fun _ -> copyJsonToClipboard())] [str "Copy Json to clipboard"]
-              button [ClassName "button is-primary"; OnClick (fun _ -> dispatch Msg.ReadClipboard)] [str "Load Json from clipboard"]
-            ]
-            yield div [Class "columns"] [
+        div [ Class "container" ] [
+          div [Class "columns"] [
               div [Class "column"]  (seq {
                 yield! GraphRender.render dispatch model
-//                yield! GraphRender.render dispatch (GraphRender.layout {model with options = {model.options with NodeBorders = not model.options.NodeBorders} })
               })
               div [Class "column"] [
                 App.EditorView.view model dispatch
               ]
 
             ]
-
-          })
+          ]
       ]
-
   ]
-//  div [ ClassName "root" ]
-//      [ div [HTMLAttr.Id "graph-output"; ClassName "graph-output"
-//             OnMouseMove (onMouseMove dispatch model MouseState.Move)
-//             OnMouseDown (onMouseMove dispatch model MouseState.Down)
-//             OnMouseUp (onMouseMove dispatch model MouseState.Up) ]
-//             (render model)
-//        button [ OnClick (fun _ -> doCopy ()) ] [ str "Copy" ]]
-//        button [ OnClick (fun _ -> dispatch Increment) ] [ str "+" ]
-//        div [] [ str (string model) ]
-//        button [ OnClick (fun _ -> dispatch Decrement) ] [ str "-" ] ]

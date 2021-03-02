@@ -39,6 +39,7 @@ type Model = {
     selectedId: Id option
     deltaPos: Pos option
     edgeCandidate: Pos option
+    isBurgerOpen: bool
 
     }
     with
@@ -60,7 +61,8 @@ let newModel(g:Graph) =
       ports = Map.empty
       /// Delta between node pos (top left corner) and actual mouse click (eg. the node center) used when moving a node
       deltaPos = None
-      edgeCandidate = None }
+      edgeCandidate = None
+      isBurgerOpen = false }
 
 let (|SelectedNode|_|) (model : Model) = Option.bind (fun id -> model.graph.nodes |> Map.tryFind id) model.selectedId
 let (|SelectedEdge|_|) (model : Model) = Option.bind (fun id -> model.graph.edges |> Map.tryFind id) model.selectedId
@@ -84,4 +86,5 @@ type Msg =
 | EndDragAndDrop
 | ReadClipboard
 | LoadJson of string * Format
+| ToggleBurger
 

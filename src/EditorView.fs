@@ -49,11 +49,11 @@ let view (model:Model) dispatch =
 
 
     let replace l idx x = List.mapi (fun i elt -> if i <> idx then elt else x) l
-    let selectedPortView (n:Graph.Port) = [ str <| sprintf "%A" n ]
+    let selectedPortView (n:Graph.Port) = [ str <| sprintf "Port %A: %s" n.guid n.title ]
     let selectedEdgeView (n:Graph.Edge) = [
 //        str <| sprintf "EDGE %u" n.id.Value
-        yield h2 [Class "title"] [str "Current Edge"]
-        yield control "Title" (input [Class "input"; Type "number"; Value n.offset; OnChange (dispatchEdgeChange (fun e -> {n with offset = e.Value |> int32}))])
+//        yield h2 [Class "title"] [str "Current Edge"]
+        yield control "Edge Offset" (input [Class "input"; Type "number"; Value n.offset; OnChange (dispatchEdgeChange (fun e -> {n with offset = e.Value |> int32}))])
 
     ]
     let selectedNodeView (n:Graph.Node) =
@@ -76,32 +76,6 @@ let view (model:Model) dispatch =
                                 span [Class "icon"] [ i [Class "fas fa-minus-circle"] [] ]
                             ]
             ]
-//            div [Class "field is-horizontal"] [
-//                div [Class "field-label is-normal"] [
-//                    label [Class "label"] [str (string idx)]
-//                ]
-//                div [Class "field-body"] [
-//                    div [Class "field is-narrow has-addons"] [
-//                        div [Class "control"] [
-//                            input [Class "input"; Type "text"; Value p.title; OnChange (dispatchNodeChange (fun e ->
-//                                if dir = Direction.Input
-//                                then {n with inputs = replace n.inputs idx {p with title = e.Value} }
-//                                else {n with outputs = replace n.outputs idx {p with title = e.Value} }
-//                                ))]
-//                        ]
-//                        div [Class "control"] [
-//                            button [ Class "button is-danger"; OnClick (dispatchNodeChange (fun _ ->
-//                                if dir = Direction.Input
-//                                then {n with inputs = n.inputs |> List.indexed |> List.choose (fun (cidx,p) -> if cidx = idx then None else Some p) }
-//                                else {n with outputs = n.outputs |> List.indexed |> List.choose (fun (cidx,p) -> if cidx = idx then None else Some p) }
-//                                )) ] [
-//                                span [Class "icon"] [ i [Class "fas fa-minus-circle"] [] ]
-//                            ]
-//                        ]
-//                    ]
-//
-//                ]
-//            ]
         let createPortButton dir =
             let onClick = dispatchNodeChange (fun _ ->
                 if dir = Direction.Input
@@ -110,8 +84,8 @@ let view (model:Model) dispatch =
             )
             button [ Class "button"; OnClick onClick] [ span [Class "icon"] [ i [Class "fas fa-plus"] [] ]; span [] [str <| sprintf "New %A" dir ] ]
         [
-            yield h2 [Class "title"] [str "Current Node"]
-            yield control "Title" (input [Class "input"; Type "text"; Value n.title; OnChange (dispatchNodeChange (fun e -> {n with title = e.Value}))])
+//            yield h2 [Class "title"] [str "Current Node"]
+            yield control "Node Title" (input [Class "input"; Type "text"; Value n.title; OnChange (dispatchNodeChange (fun e -> {n with title = e.Value}))])
 
             yield article [Class "panel is-info"] [
                 yield p [Class "panel-heading"] [
@@ -127,19 +101,15 @@ let view (model:Model) dispatch =
                 yield div [Class "panel-block"][createPortButton Direction.Output]
                 yield! n.outputs |> List.mapi (portView Direction.Output)
             ]
-//            yield sectionLabelHorizontal "Inputs" [ createPortButton Direction.Input ]
-//            yield! n.inputs |> List.mapi (portView Direction.Input)
-//            yield sectionLabelHorizontal "Outputs" [ createPortButton Direction.Output ]
-//            yield! n.outputs |> List.mapi (portView Direction.Output)
         ]
 
-//    printfn "%A" model.options
     div [] (seq {
+        if model.selectedNode.IsSome then yield! selectedNodeView model.selectedNode.Value
+        if model.selectedPort.IsSome then yield! selectedPortView model.selectedPort.Value
+        if model.selectedEdge.IsSome then yield! selectedEdgeView model.selectedEdge.Value
         yield h2 [Class "title"] [str "Options"]
         yield controlCheckbox "Show Node Borders" model.options.NodeBorders (fun b -> {model.options with NodeBorders = b})
         yield controlCheckbox "Show Ports" model.options.ShowPorts (fun b -> {model.options with ShowPorts = b})
         yield controlCheckbox "Show Debug Ids" model.options.ShowIds (fun b -> {model.options with ShowIds = b})
         yield control "Margin" (input [Class "input"; Type "number"; Value model.options.Margin; OnChange (dispatchChange (fun e o -> {o with Margin = int e.Value}))])
-        if model.selectedNode.IsSome then yield! selectedNodeView model.selectedNode.Value
-        if model.selectedPort.IsSome then yield! selectedPortView model.selectedPort.Value
     })

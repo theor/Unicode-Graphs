@@ -84,6 +84,7 @@ let update (msg:Msg) (model:Model): Model * Cmd<Msg> =
         match App.Serialization.fromJson json with
         | Ok m -> m |> cmdLayout
         | Error e -> eprintfn "Error: %A" e; model, Cmd.none
+    | ToggleBurger -> { model with isBurgerOpen = not model.isBurgerOpen }, Cmd.none
     | _ -> failwithf "Message not implemented: %A" msg
 
 
