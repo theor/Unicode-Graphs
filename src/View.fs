@@ -45,13 +45,19 @@ let copyJsonToClipboard model =
   let b64 = Serialization.toBase64String json
   JS.console.log("Base64", b64)
   copyClipboard(Serialization.toJson model)
-let graphText model =
-  let gr =
+
+[<RequireQualifiedAccess>]
+type GraphTextMode = Raw | Comment | Markdown
+let graphText (mode:GraphTextMode) model =
+  let lines =
     Browser.Dom.document.querySelector("#graph-output").textContent
     |> Seq.chunkBySize model.options.ActualCanvasWidth
     |> Seq.map System.String
-    |> String.concat "\n"
-  sprintf "%s\n%s" Browser.Dom.window.location.href gr
+  let url = Browser.Dom.window.location.href
+  match mode with
+  | GraphTextMode.Raw -> lines |> String.concat "\n" |> sprintf "%s\n%s" url
+  | GraphTextMode.Comment -> lines |> String.concat "\n// " |> sprintf "// %s\n// %s" url
+  | GraphTextMode.Markdown -> lines |> String.concat "\n" |> sprintf "```\n%s\n%s\n```" url
 
 let menuItemColor label icon color tooltip onClick =
     Button.a [ Button.Option.Color color
@@ -60,7 +66,7 @@ let menuItemColor label icon color tooltip onClick =
                Button.CustomClass (sprintf "%s %s" Tooltip.ClassName Tooltip.IsTooltipBottom)
     ] [
       yield Icon.icon [] [
-          i [Class <| sprintf "fa %s" icon] []
+          i [Class <| icon] []
       ]
       if not <| System.String.IsNullOrEmpty label then yield span [] [str label]
     ]
@@ -78,8 +84,10 @@ let navbarView model dispatch =
       ]
       Navbar.Item.div [] [
         Button.list [] [
-          menuItemColor "New Node" "fa-plus" Color.IsPrimary "Add a new node" (fun _ -> dispatch (AddNode(Graph.GraphBuilder(model.graph).nextId(), "New")))
-          menuItem "Copy Graph" "fa-copy" "Copy Graph" (fun _ -> copyClipboard(graphText model))
+          menuItemColor "New Node" "fa fa-plus" Color.IsPrimary "Add a new node" (fun _ -> dispatch (AddNode(Graph.GraphBuilder(model.graph).nextId(), "New")))
+          menuItem "" "fa fa-copy" "Copy graph as text" (fun _ -> copyClipboard(graphText GraphTextMode.Raw model))
+          menuItem "" "fab fa-slack" "Copy graph as markdown" (fun _ -> copyClipboard(graphText GraphTextMode.Raw model))
+          menuItem "" "fa fa-code" "Copy graph as code comment" (fun _ -> copyClipboard(graphText GraphTextMode.Raw model))
         ]
       ]
       Navbar.burger [ Navbar.Burger.Option.OnClick (fun _ -> dispatch ToggleBurger)] [
@@ -93,8 +101,8 @@ let navbarView model dispatch =
       Navbar.End.div [] [
         Navbar.Item.div [] [
           Button.list [] [
-            menuItem "" "fa-download" "Copy Json to clipboard" (fun _ -> copyJsonToClipboard model)
-            menuItem "" "fa-upload" "Load Json from clipboard" (fun _ -> dispatch Msg.ReadClipboard)
+            menuItem "" "fa fa-download" "Copy Json to clipboard" (fun _ -> copyJsonToClipboard model)
+            menuItem "" "fa fa-upload" "Load Json from clipboard" (fun _ -> dispatch Msg.ReadClipboard)
           ]
         ]
       ]

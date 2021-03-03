@@ -10,6 +10,7 @@ open App.GraphLayout
 open App.View
 
 Fable.Core.JsInterop.importAll "bulma-tooltip"
+Fable.Core.JsInterop.importAll "@fortawesome/fontawesome-free/js/all"
 
 type Route = Home | Graph of string
 let init(initRoute: Route option) : Model * Cmd<Msg> =
