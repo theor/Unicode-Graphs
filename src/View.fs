@@ -11,6 +11,7 @@ open Fulma
 open Fulma
 open Fulma
 open Fulma
+open Fulma
 open Fulma.Extensions.Wikiki
 
 
@@ -153,5 +154,18 @@ let view (model:Model) dispatch =
               ]
             ]
           ]
+      ]
+      Footer.footer [] [
+        Content.content [ Content.Option.Modifiers [ Modifier.IModifier.TextAlignment(Screen.All, Fulma.TextAlignment.Centered) ] ] [
+          p [] [
+            strong [] [str "Unicode Graphs"]
+            str " by "
+            a [Href "https://github.com/theor"] [str "theor"]
+          ]
+          p [] [
+            Icon.icon [] [i [Class <| "fab fa-github-square"] []]
+            a [Href "https://github.com/theor/Unicode-Graphs"] [ str "Source Code" ]
+          ]
+        ]
       ]
   ]
