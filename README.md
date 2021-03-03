@@ -1,6 +1,8 @@
-# Fable Minimal App
+# Unicode graphs
 
-This is a small Fable app project so you can easily get started and add your own code easily in it.
+[Live here: code-graphs.netlify.app](code-graphs.netlify.app)
+
+A static website to edit graphs as unicode characters. Graphs can be shared via the url at any time.
 
 ## Requirements
 
@@ -8,10 +10,14 @@ This is a small Fable app project so you can easily get started and add your own
 * [node.js](https://nodejs.org) with [npm](https://www.npmjs.com/)
 * An F# editor like Visual Studio, Visual Studio Code with [Ionide](http://ionide.io/) or [JetBrains Rider](https://www.jetbrains.com/rider/).
 
+## Deployment
+
+A github action builds the Fable project on push and deploys it to netlify
+
 ## Building and running the app
 
-* Install JS dependencies: `npm install`
-* Install F# dependencies: `npm start`
+* Install JS dependencies: `yarn`
+* Install F# dependencies: `yarn start`
 * After the first compilation is finished, in your browser open: http://localhost:8080/
 
 Any modification you do to the F# code will be reflected in the web page after saving.
@@ -28,8 +34,8 @@ JS dependencies are declared in `package.json`, while `package-lock.json` is a l
 
 ### F#
 
-The sample only contains two F# files: the project (.fsproj) and a source file (.fs) in the `src` folder.
+The sample contains F# files: the project (.fsproj) and all source file (.fs) in the `src` folder.
 
 ### Web assets
 
-The `index.html` file and other assets like an icon can be found in the `public` folder.
+Images and other assets like an icon can be found in the `public` folder.
