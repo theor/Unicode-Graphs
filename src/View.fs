@@ -86,8 +86,8 @@ let navbarView model dispatch =
         Button.list [] [
           menuItemColor "New Node" "fa fa-plus" Color.IsPrimary "Add a new node" (fun _ -> dispatch (AddNode(Graph.GraphBuilder(model.graph).nextId(), "New")))
           menuItem "" "fa fa-copy" "Copy graph as text" (fun _ -> copyClipboard(graphText GraphTextMode.Raw model))
-          menuItem "" "fab fa-slack" "Copy graph as markdown" (fun _ -> copyClipboard(graphText GraphTextMode.Raw model))
-          menuItem "" "fa fa-code" "Copy graph as code comment" (fun _ -> copyClipboard(graphText GraphTextMode.Raw model))
+          menuItem "" "fab fa-slack" "Copy graph as markdown" (fun _ -> copyClipboard(graphText GraphTextMode.Markdown model))
+          menuItem "" "fa fa-code" "Copy graph as code comment" (fun _ -> copyClipboard(graphText GraphTextMode.Comment model))
         ]
       ]
       Navbar.burger [ Navbar.Burger.Option.OnClick (fun _ -> dispatch ToggleBurger)] [
