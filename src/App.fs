@@ -9,6 +9,8 @@ open App.Types
 open App.GraphLayout
 open App.View
 
+Fable.Core.JsInterop.importAll "bulma-tooltip"
+
 type Route = Home | Graph of string
 let init(initRoute: Route option) : Model * Cmd<Msg> =
     let route = initRoute |> Option.defaultValue Route.Home

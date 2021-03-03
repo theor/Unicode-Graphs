@@ -7,7 +7,7 @@ let hasTitle n = not <| String.IsNullOrWhiteSpace n.title
 let layout (model:Model) =
     let ifBordersThen2 = (if model.options.NodeBorders then 2 else 0)
     let mutable nodeSizes = Map.empty<Id,Rect>
-    
+
     let measureNode guid n =
         let titleHeight = if hasTitle n then 1 else 0
         let portWidth =
@@ -24,16 +24,16 @@ let layout (model:Model) =
                 |> Seq.max
             else 0
 
-
         let nw,nh = n.title.Length + 2*model.options.Margin + ifBordersThen2,
                     (if model.options.NodeBorders then 2 else 0) + titleHeight + if model.options.ShowPorts then Math.Max(n.inputs.Length, n.outputs.Length) else 0
         let nw = Math.Max(nw, portWidth)
         let x,y = n.pos
         nodeSizes <- Map.add guid (Rect.Create(x,y,nw,nh)) nodeSizes
+
     model.graph.nodes |> Map.iter measureNode
-    
-    let maxW = 2 + (nodeSizes |> Map.fold (fun max _ n -> Math.Max(max, (n.X + n.W))) 0)
-    let maxH = 2 + (nodeSizes |> Map.fold (fun max _ n -> Math.Max(max, (n.Y + n.H))) 0)
+
+    let maxW = (nodeSizes |> Map.fold (fun max _ n -> Math.Max(max, (n.X + n.W))) 0)
+    let maxH = (nodeSizes |> Map.fold (fun max _ n -> Math.Max(max, (n.Y + n.H))) 0)
     let w = Option.defaultValue maxW model.options.CanvasWidth
     let h = Option.defaultValue maxH model.options.CanvasHeight
 

@@ -10,6 +10,7 @@ open Fable.React.Props
 open Fulma
 open Fulma
 open Fulma
+open Fulma.Extensions.Wikiki
 
 
 [<StringEnum; RequireQualifiedAccess>]
@@ -33,8 +34,6 @@ let readClipboard (): Async<Msg> =
     let! text = Async.AwaitPromise <| Browser.Navigator.navigator.clipboard.Value.readText ()
     return Msg.LoadJson(text, Format.Json)
   }
-let menuItem label onClick =
-    Button.a [ Button.OnClick (fun _ -> onClick()) ] [str label]
 
 let copyClipboard (content:string) =
   async {
@@ -54,8 +53,22 @@ let graphText model =
     |> String.concat "\n"
   sprintf "%s\n%s" Browser.Dom.window.location.href gr
 
+let menuItemColor label icon color tooltip onClick =
+    Button.a [ Button.Option.Color color
+               Button.OnClick (fun _ -> onClick())
+               Button.Props [ Tooltip.dataTooltip tooltip ]
+               Button.CustomClass (sprintf "%s %s" Tooltip.ClassName Tooltip.IsTooltipBottom)
+    ] [
+      yield Icon.icon [] [
+          i [Class <| sprintf "fa %s" icon] []
+      ]
+      if not <| System.String.IsNullOrEmpty label then yield span [] [str label]
+    ]
+
+let menuItem label icon tooltip onClick = menuItemColor label icon Color.IsLink tooltip onClick
+
 let navbarView model dispatch =
-   Navbar.navbar [Navbar.CustomClass "is-primary"] [
+   Navbar.navbar [] [
     Navbar.Brand.div [] [
       Navbar.Item.a [] [
         Icon.icon [] [
@@ -65,14 +78,8 @@ let navbarView model dispatch =
       ]
       Navbar.Item.div [] [
         Button.list [] [
-          Button.button [
-            Button.OnClick (fun _ -> dispatch (AddNode(Graph.GraphBuilder(model.graph).nextId(), "New")))
-          ] [
-            Icon.icon [] [
-              i [Class "fa fa-plus"] []
-            ]
-            span [] [str "New Node"]
-          ]
+          menuItemColor "New Node" "fa-plus" Color.IsPrimary "Add a new node" (fun _ -> dispatch (AddNode(Graph.GraphBuilder(model.graph).nextId(), "New")))
+          menuItem "Copy Graph" "fa-copy" "Copy Graph" (fun _ -> copyClipboard(graphText model))
         ]
       ]
       Navbar.burger [ Navbar.Burger.Option.OnClick (fun _ -> dispatch ToggleBurger)] [
@@ -86,9 +93,8 @@ let navbarView model dispatch =
       Navbar.End.div [] [
         Navbar.Item.div [] [
           Button.list [] [
-            menuItem  "Copy Graph" (fun _ -> copyClipboard(graphText model))
-            menuItem  "Copy Json to clipboard" (fun _ -> copyJsonToClipboard model)
-            menuItem  "Load Json from clipboard" (fun _ -> dispatch Msg.ReadClipboard)
+            menuItem "" "fa-download" "Copy Json to clipboard" (fun _ -> copyJsonToClipboard model)
+            menuItem "" "fa-upload" "Load Json from clipboard" (fun _ -> dispatch Msg.ReadClipboard)
           ]
         ]
       ]
