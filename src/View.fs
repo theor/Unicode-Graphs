@@ -10,6 +10,7 @@ open Fable.React.Props
 open Fulma
 open Fulma
 open Fulma
+open Fulma
 open Fulma.Extensions.Wikiki
 
 
@@ -115,9 +116,40 @@ let view (model:Model) dispatch =
       Section.section [] [
         Container.container [] [
           Columns.columns [] [
-              Column.column [] (GraphRender.render dispatch model |> Seq.toList)
+              Column.column [] [
+                yield! (GraphRender.render dispatch model |> Seq.toList)
+              ]
               Column.column [] [
                 App.EditorView.view model dispatch
+                Fulma.Message.message [] [
+                  Message.header [] [str "How to use"]
+                  Message.body [] [
+                    Fulma.Content.content [] [
+                      Fulma.Text.div [] [
+                        str "Nodes can be moved on the canvas, which will grow if needed to accomodate all nodes. Use the "
+                        code [] [str "New Node"]
+                        str " button to create nodes and the "
+                        code [] [str"Del"]
+                        str " key to delete a node or an edge"
+                      ]
+                      Fulma.Text.div [] [str "Selecting a node allows to change its title and add or remove ports. An empty title will hide the node's title line." ]
+                      Fulma.Text.div [] [
+                        code [] [str "Ctrl+D"]
+                        str " to duplicate a node"
+                      ]
+                    ]
+                    Fulma.Content.content [] [
+                      Fulma.Text.div [] [str "To share a graph, you can just copy the url." ]
+                    ]
+                    Fulma.Content.content [] [
+                      Fulma.Text.div [] [
+                        str "The three \"Copy...\" buttons will copy the graph to the clipboard: \"as text\" is the raw graph as drawn here, \"as markdown\" surrounds it with triple backticks for slack, \"as code comment\" will add a "
+                        code [] [str "// "]
+                        str " prefix to each line"
+                      ]
+                    ]
+                  ]
+                ]
               ]
             ]
           ]
