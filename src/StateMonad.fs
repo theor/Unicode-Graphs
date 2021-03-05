@@ -20,14 +20,15 @@ let bindM f xS =
     S run
 type StateBuilder()=
     member this.Return(x) =
-        JS.console.log("return", this, x)
+//        JS.console.log("return", this, x)
         returnM x
     member this.ReturnFrom(xs) =
-        JS.console.log("return from", this, xs)
+//        JS.console.log("return from", this, xs)
         xs
     member this.Bind(xM,f) =
-        JS.console.log("bind", this, xM, f)
+//        JS.console.log("bind", this, xM, f)
         bindM f xM
+    member this.Zero() = S (fun x -> (),x)
 let state = StateBuilder()
 
 let getS =
