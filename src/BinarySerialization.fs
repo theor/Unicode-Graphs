@@ -10,7 +10,11 @@ open Graph
 type IBase64Arraybuffer =
     abstract member encode: JS.ArrayBuffer-> string
     abstract member decode: string -> JS.ArrayBuffer
+type ILz4js =
+    abstract member compress: JS.TypedArray-> JS.TypedArray
+    abstract member decompress: JS.TypedArray-> JS.TypedArray
 let base64Arraybuffer: IBase64Arraybuffer = JsInterop.importAll "base64-arraybuffer";
+let lz4js: ILz4js = JsInterop.importAll "lz4js";
 
 type SerializationState = {
     view: JS.DataView
@@ -216,18 +220,21 @@ let toBase64 (m:Model) =
     let len = serialize sm |> writeState null
     let b = JS.Constructors.ArrayBuffer.Create(len)
     let r =  serialize sm |> writeState b
+    let b2 = lz4js.compress <| JS.Constructors.Uint8Array.Create(b, 0, b.byteLength)
     if len <> r then failwithf "non matched lengths: %i %i" len r
-    let res = base64Arraybuffer.encode(b)
+//    let res = base64Arraybuffer.encode(b)
+    let res2 = base64Arraybuffer.encode(b2.buffer)
 //    let u8 = JS.Constructors.Uint8Array.Create(b)
 //    let res = toBase64String <| u8.join("")
-//    JS.console.log("SER", res, b)
-    res
+//    JS.console.log("SER", res, res.Length, res2, res2.Length, b, b2)
+    res2
 let fromBase64 (s:string) =
     let decoded = base64Arraybuffer.decode s
+    let decompressed = lz4js.decompress <| JS.Constructors.Uint8Array.Create(decoded, 0, decoded.byteLength)
 //    let mutable decoded = JS.Constructors.Uint8Array.Create(a.Length)
 //    JS.console.log("DESER", s, decoded)
 //    for i in 0..a.Length-1 do
 //        decoded.[i] <- Byte.Parse <| string a.[i]
 //    JS.console.log decoded
 
-    deserialize |> writeState decoded |> SerializationModel.toModel
+    deserialize |> writeState decompressed.buffer |> SerializationModel.toModel
