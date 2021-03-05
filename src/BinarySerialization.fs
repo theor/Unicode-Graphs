@@ -7,6 +7,11 @@ open Fable.Core
 open Types
 open Graph
 
+type IBase64Arraybuffer =
+    abstract member encode: JS.ArrayBuffer-> string
+    abstract member decode: string -> JS.ArrayBuffer
+let base64Arraybuffer: IBase64Arraybuffer = JsInterop.importAll "base64-arraybuffer";
+
 type SerializationState = {
     view: JS.DataView
     offset: int
@@ -211,26 +216,18 @@ let toBase64 (m:Model) =
     let len = serialize sm |> writeState null
     let b = JS.Constructors.ArrayBuffer.Create(len)
     let r =  serialize sm |> writeState b
-    let u8 = JS.Constructors.Uint8Array.Create(b)
-    let res = toBase64String <| u8.join("")
-    JS.console.log("SER", res, u8)
+    if len <> r then failwithf "non matched lengths: %i %i" len r
+    let res = base64Arraybuffer.encode(b)
+//    let u8 = JS.Constructors.Uint8Array.Create(b)
+//    let res = toBase64String <| u8.join("")
+//    JS.console.log("SER", res, b)
     res
 let fromBase64 (s:string) =
-    let a:string = fromBase64String s
-    JS.console.log("DESER", s, a)
-    let mutable decoded = JS.Constructors.Uint8Array.Create(a.Length)
-    for i in 0..a.Length-1 do
-        decoded.[i] <- Byte.Parse <| string a.[i]
-    JS.console.log decoded
+    let decoded = base64Arraybuffer.decode s
+//    let mutable decoded = JS.Constructors.Uint8Array.Create(a.Length)
+//    JS.console.log("DESER", s, decoded)
+//    for i in 0..a.Length-1 do
+//        decoded.[i] <- Byte.Parse <| string a.[i]
+//    JS.console.log decoded
 
-    deserialize |> writeState decoded.buffer |> SerializationModel.toModel
-
-let test (m:SerializationModel) =
-    let len = serialize m |> writeState null
-    JS.console.log("BUFFER LEN", len)
-
-    let b = JS.Constructors.ArrayBuffer.Create(len)
-    let r =  serialize m |> writeState b
-    JS.console.log("BUFFER",b, r)
-    let x = deserialize |> writeState b
-    JS.console.log("READ", x)
+    deserialize |> writeState decoded |> SerializationModel.toModel

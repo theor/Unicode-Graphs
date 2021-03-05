@@ -27,6 +27,7 @@
   "version": "1.0.0",
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.13.0",
+    "base64-arraybuffer": "^0.2.0",
     "bulma": "0.9.0",
     "bulma-tooltip": "^3.0.0",
     "react": "^17.0.1",
