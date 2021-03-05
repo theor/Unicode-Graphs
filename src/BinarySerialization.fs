@@ -1,5 +1,6 @@
 module App.BinarySerialization
 
+open System.Text
 open Fable.Core
 
 open Types
@@ -46,7 +47,11 @@ let writeUInt8 (i:uint8): S<State,unit> = write (fun v o -> v.setUint8(o, i)) 1
 let writeBool (i:bool): S<State,unit> = write (fun v o -> v.setInt8(o, if i then 1y else 0y)) 1
 let writeString (x:string): S<State,unit> =
     state {
-        do! writeInt x.Length
+        let b = Encoding.UTF8.GetBytes x
+        do! writeUInt8 (uint8 b.Length)
+        let l = b.Length-1
+        for i in 0..l do
+            do! writeUInt8 b.[i]
     }
 //    write (fun v o -> v.setInt8(o, if i then 1y else 0y); 1) i
 let read f : S<State, 'a> =
@@ -56,15 +61,28 @@ let read f : S<State, 'a> =
         do! putS {s with offset = s.offset + size}
         return (f s.view) s.offset
     }
-let readUInt8(): S<State, uint8> = read (fun v -> v.getUint8)
-let readBool(): S<State, bool> = read (fun v -> (fun o -> v.getUint8(o) = 1uy))
+let readUInt8: S<State, uint8> = read (fun v -> v.getUint8)
+let readBool: S<State, bool> = read (fun v -> (fun o -> v.getUint8(o) = 1uy))
+let readString: S<State, string> =
+    state {
+        let! len = readUInt8
+        do JS.console.log("READ LEN", len)
+        let mutable arr = Array.zeroCreate (int len)
+//        while true do
+        for i in 0..(int len)-1 do
+            let! c = readUInt8 
+            do JS.console.log("    READ BYTE", c)
+            arr.[i] <- c
+        do JS.console.log("    ARR", arr)
+        return ""// Encoding.UTF8.GetString(arr)
+    }
+//    read (fun v -> (fun o -> v.getUint8(o) = 1uy))
 //    state {
 //        let! s = getS
 //        let size = 1
 //        do! putS {s with offset = s.offset + size}
 //        return s.view.getUint8(s.offset)
 //    }
-
 let writeState buffer w =
     let s:State = {offset=0; view=if buffer = null then null else JS.Constructors.DataView.Create(buffer)}
     let x, s = runS w s
@@ -75,6 +93,7 @@ let test (m:SerializationModel) =
         do! writeBool m.options.NodeBorders
         do! writeBool m.options.ShowPorts
         do! writeBool m.options.ShowIds
+        do! writeString "asd"
         let! s = getS
         return s.offset
     }
@@ -86,9 +105,10 @@ let test (m:SerializationModel) =
     let r = writeState b w
     JS.console.log("BUFFER",b, r)
     let x = state {
-              let! i = readBool()  
-              let! b = readBool()
-              let! j = readBool()  
-              return i,b,j
+              let! i = readBool  
+              let! b = readBool
+              let! j = readBool
+              let! s = readString
+              return i,b,j,s
             } |> writeState b
     printf "READ %O" x
