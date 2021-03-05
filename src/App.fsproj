@@ -7,6 +7,8 @@
     <Compile Include="Graph.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="GraphLayout.fs" />
+    <Compile Include="StateMonad.fs" />
+    <Compile Include="BinarySerialization.fs" />
     <Compile Include="Serialization.fs" />
     <Compile Include="GraphRender.fs" />
     <Compile Include="EditorView.fs" />

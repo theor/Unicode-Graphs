@@ -141,9 +141,9 @@ let render dispatch (model:Model) =
             n.outputs |> List.iteri (fun i p -> renderLabel (r.X + r.W - 2*ifBorderThenOne - p.title.Length) (r.Y + titleHeight + i + ifBorderThenOne) (p.title + portChar) p.guid)
         ()
 
-    let renderEdgeFromTo id rfx rfy rtx rty offset =
+    let renderEdgeFromTo id rfx rfy rtx rty (offset:int8) =
         let mutable (i,j) = rfx,rfy
-        let edgeCenterX, edgeCenterY = (i+rtx)/2+offset, (j+rty)/2
+        let edgeCenterX, edgeCenterY = (i+rtx)/2+ (int offset), (j+rty)/2
         let dirX, dirY = sign (rtx-i), sign (rty-j)
         let needHorizontalMove = i <> edgeCenterX
 
@@ -185,7 +185,7 @@ let render dispatch (model:Model) =
                 set i j '\u2500' id
                 i <- i + dirX
 
-    let getPortPosition (nodeId:Id) (portIndex:uint) (dir:Direction): Pos =
+    let getPortPosition (nodeId:Id) (portIndex:uint8) (dir:Direction): Pos =
 //        JS.console.log(sprintf "Get port position %A %A %A" nodeId portIndex dir)
         let node = Map.find nodeId model.graph.nodes
         let portList = (if dir = Direction.Input then node.inputs else node.outputs)
@@ -202,11 +202,11 @@ let render dispatch (model:Model) =
 
         Option.map2 (fun a b -> a,b) (Map.tryFind fromNodeId model.nodeSizes) (Map.tryFind toNodeId model.nodeSizes)
         |> Option.iter (fun (rf,rt) ->
-            let rfx,rfy = if not options.ShowPorts || fromIndex = UInt32.MaxValue
+            let rfx,rfy = if not options.ShowPorts || fromIndex = Byte.MaxValue
                           then rf.Center
                           else getPortPosition fromNodeId fromIndex Direction.Output
 
-            let rtx,rty =  if not options.ShowPorts || toIndex = UInt32.MaxValue
+            let rtx,rty =  if not options.ShowPorts || toIndex = Byte.MaxValue
                            then rt.Center
                            else getPortPosition toNodeId toIndex Direction.Input
 
@@ -214,15 +214,15 @@ let render dispatch (model:Model) =
             renderEdgeFromTo id rfx rfy rtx rty e.offset
         )
 
-    let renderEdgeCandidate (fromNode:Id) (fromIndex:uint) (fromDir:Direction) toX toY =
+    let renderEdgeCandidate (fromNode:Id) (fromIndex:uint8) (fromDir:Direction) toX toY =
         let rf = model.nodeSizes.Item fromNode
-        let rfx,rfy = if not options.ShowPorts || fromIndex = UInt32.MaxValue
+        let rfx,rfy = if not options.ShowPorts || fromIndex = Byte.MaxValue
                       then rf.Center
                       else getPortPosition fromNode fromIndex fromDir
 
         match fromDir with
-        | Direction.Output -> renderEdgeFromTo (Id 0u) rfx rfy toX toY 0
-        | Direction.Input -> renderEdgeFromTo (Id 0u) (toX+1) toY rfx rfy 0
+        | Direction.Output -> renderEdgeFromTo (Id 0u) rfx rfy toX toY 0y
+        | Direction.Input -> renderEdgeFromTo (Id 0u) (toX+1) toY rfx rfy 0y
 
     g.nodes |> Map.iter renderNode
     g.edges |> Map.iter renderEdge

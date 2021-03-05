@@ -44,7 +44,7 @@ let copyClipboard (content:string) =
   } |> Async.StartImmediate
 let copyJsonToClipboard model =
   let json = Serialization.toJson model
-  let b64 = Serialization.toBase64String json
+  let b64 = BinarySerialization.toBase64String json
   JS.console.log("Base64", b64)
   copyClipboard(Serialization.toJson model)
 

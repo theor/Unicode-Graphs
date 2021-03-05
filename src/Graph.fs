@@ -27,10 +27,10 @@ type Node = {
 [<Struct>]
 type Edge = {
     id: Id
-    fromNode: Id * uint
-    toNode: Id * uint
+    fromNode: Id * uint8
+    toNode: Id * uint8
     isNodeEdge: bool
-    offset: int
+    offset: int8
 }
 
 type Graph = {
@@ -45,7 +45,7 @@ let emptyGraph(): Graph = {
     nodes= Map.empty
     edges= Map.empty
 }
-    
+
 let getMaxId(g:Graph):uint =
     let maxOrDefault defaultValue s = if Seq.isEmpty s then defaultValue else s |> Seq.max
     let maxMap (m:Map<Id,_>) = m |> Map.toSeq |>Seq.map(fun (i,_) -> i.Value) |> maxOrDefault 0u
@@ -56,8 +56,8 @@ let getMaxId(g:Graph):uint =
 type GraphBuilder(g0:Graph) =
     let mutable g: Graph = g0
     let mutable next: uint = getMaxId(g0)
-    
-    member this.nextId() = 
+
+    member this.nextId() =
         next <- next + 1u
         Id next
     new() = GraphBuilder(emptyGraph())
@@ -79,11 +79,11 @@ type GraphBuilder(g0:Graph) =
         }
     member this.AddNodeEdge(fromNode:Id, toNode:Id, ?id:Id) =
        let guid = Option.defaultWith this.nextId id in
-       g <- {g with edges = Map.add guid {id=guid; fromNode=(fromNode,UInt32.MaxValue); toNode=(toNode,UInt32.MaxValue); isNodeEdge = true; offset=0} g.edges}
+       g <- {g with edges = Map.add guid {id=guid; fromNode=(fromNode,Byte.MaxValue); toNode=(toNode,Byte.MaxValue); isNodeEdge = true; offset=0y} g.edges}
        this
-    member this.AddEdge(fromNode:Id, fromIndex:uint, toNode:Id, toIndex:uint, ?id:Id) =
+    member this.AddEdge(fromNode:Id, fromIndex:uint8, toNode:Id, toIndex:uint8, ?id:Id) =
        let guid = Option.defaultWith this.nextId id in
-       g <- {g with edges = Map.add guid {id=guid; fromNode=(fromNode,fromIndex); toNode=(toNode,toIndex); isNodeEdge = false; offset=0} g.edges}
+       g <- {g with edges = Map.add guid {id=guid; fromNode=(fromNode,fromIndex); toNode=(toNode,toIndex); isNodeEdge = false; offset=0y} g.edges}
        this
     member this.RemoveNode(id:Id) =
         g <- {g with nodes = Map.remove id g.nodes}
@@ -98,7 +98,7 @@ type GraphBuilder(g0:Graph) =
             node with
                 guid = guid
                 inputs = node.inputs |> List.map duplicatePort
-                outputs = node.outputs |> List.map duplicatePort 
+                outputs = node.outputs |> List.map duplicatePort
         }
         g <- { g with nodes = Map.add guid duplicate g.nodes }
         this

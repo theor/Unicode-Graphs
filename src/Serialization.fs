@@ -4,30 +4,7 @@ open Fable.Core
 open Thoth.Json
 open Types
 open Graph
-
-[<Emit("btoa($0)")>]
-let toBase64String (s:string) : string = failwith "JS"
-
-[<Emit("atob($0)")>]
-let fromBase64String (s:string) : string = failwith "JS"
-
-type SerializationModel = {
-    options: RenderOptions
-    nodes: Node array
-    edges: Edge array
-}
-    with
-        static member toModel(m:SerializationModel):Model =
-            let g: Graph = {
-                nodes= m.nodes |> Seq.map (fun n -> (n.guid,n)) |> Map.ofSeq
-                edges= m.edges |> Seq.map (fun n -> (n.id,n)) |> Map.ofSeq
-            }
-            { newModel g with options=m.options }
-        static member fromModel(m:Model):SerializationModel = {
-            options = m.options
-            nodes = m.graph.nodes |> Map.toSeq |> Seq.map snd |> Seq.toArray
-            edges = m.graph.edges |> Map.toSeq |> Seq.map snd |> Seq.toArray
-        }
+open BinarySerialization
 
 let encodeId (id:Id) = Encode.uint32 id.Value
 let decodeId (path:string) (value:obj) = Decode.uint32 path value |> Result.map Id.Id
