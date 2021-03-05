@@ -25,7 +25,7 @@ let init(initRoute: Route option) : Model * Cmd<Msg> =
         let b = gb.AddNode("B Node", (25,1), ["BI"; "BI2"], ["BO1"])
     //    let c = gb.AddNode("C Node", (15,1))
     //    let d = gb.AddNode("D Node", (25,5))
-        gb.AddEdge(a, 0u,b, 1u) |> ignore
+        gb.AddEdge(a, 0uy,b, 1uy) |> ignore
     //    gb.AddEdge(a, 1u,b, 0u) |> ignore
     //    gb.AddNodeEdge(a,c) |> ignore
     //    gb.AddNodeEdge(c,b) |> ignore
@@ -37,10 +37,10 @@ let init(initRoute: Route option) : Model * Cmd<Msg> =
 
 let cmdLayout m =
     let m2 = layout m
-    m2, Navigation.modifyUrl (sprintf "#/graph/%s" (App.Serialization.toBase64String <| App.Serialization.toJson m2))
+    m2, Navigation.modifyUrl (sprintf "#/graph/%s" (App.BinarySerialization.toBase64 m2))
 
 let update (msg:Msg) (model:Model): Model * Cmd<Msg> =
-    App.Serialization.toBin model
+//    App.Serialization.toBin model
     match msg with
     | Layout -> cmdLayout model
     | Move(n, newPos) -> {model with graph = {model.graph with nodes = Map.change n (fun x -> { x.Value with pos = newPos } |> Some) model.graph.nodes}} |> cmdLayout
@@ -83,11 +83,13 @@ let update (msg:Msg) (model:Model): Model * Cmd<Msg> =
                             highlightedId = id }, Cmd.none
     | ReadClipboard -> printfn "READ CLIP"; model, Cmd.OfAsync.result (App.View.readClipboard ())
     | LoadJson(data, format) ->
-        let json = match format with | Format.Json -> data | Format.B64 -> App.Serialization.fromBase64String data
-        printfn "LOAD JSON %s" json
-        match App.Serialization.fromJson json with
-        | Ok m -> m |> cmdLayout
-        | Error e -> eprintfn "Error: %A" e; model, Cmd.none
+        let m = match format with
+                | Format.Json ->
+                     match App.Serialization.fromJson data with
+                            | Ok m -> m
+                            | Error e -> eprintfn "Error: %A" e; model
+                | Format.B64 -> App.BinarySerialization.fromBase64 data
+        cmdLayout m
     | ToggleBurger -> { model with isBurgerOpen = not model.isBurgerOpen }, Cmd.none
     | _ -> failwithf "Message not implemented: %A" msg
 

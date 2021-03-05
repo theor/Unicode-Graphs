@@ -26,7 +26,7 @@ type RenderOptions = {
 type PortEntry ={
     port:Port
     ownerNode:Id
-    index:uint
+    index:uint8
     position:Pos
     direction: Direction
 }

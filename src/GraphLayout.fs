@@ -46,7 +46,7 @@ let layout (model:Model) =
         {
             port=p
             ownerNode=node.guid
-            index=uint index
+            index=uint8 index
             position= pos
             direction = dir
         }

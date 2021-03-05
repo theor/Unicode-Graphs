@@ -13,7 +13,7 @@ let view (model:Model) dispatch =
     let dispatchEdgeChange (f:Event -> Graph.Edge) (e:Event) =
         dispatch <| ChangeEdge (f e)
     let controlCheckbox (name:string) (value:bool) (setValue: bool -> RenderOptions) =
-        printfn "%s %b" name value
+//        printfn "%s %b" name value
         div [Class "field"] [
             div [Class "control"] [
                 label [Class "checkbox"] [
@@ -53,7 +53,8 @@ let view (model:Model) dispatch =
     let selectedEdgeView (n:Graph.Edge) = [
 //        str <| sprintf "EDGE %u" n.id.Value
 //        yield h2 [Class "title"] [str "Current Edge"]
-        yield control "Edge Offset" (input [Class "input"; Type "number"; Value n.offset; OnChange (dispatchEdgeChange (fun e -> {n with offset = e.Value |> int32}))])
+        yield control "Edge Offset" (input [Class "input"; Type "number"; Value n.offset
+                                            OnChange (dispatchEdgeChange (fun e -> {n with offset = e.Value |> int8}))])
 
     ]
     let selectedNodeView (n:Graph.Node) =
