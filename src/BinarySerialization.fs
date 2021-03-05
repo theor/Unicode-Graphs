@@ -48,15 +48,32 @@ let write f size : State<unit,SerializationState> =
         do! putState {s with offset = s.offset + size}
     }
 let writeInt (i:int): State<unit,SerializationState> = write (fun v o -> v.setInt32(o, i)) 4
+let writeUInt (i:uint): State<unit,SerializationState> = write (fun v o -> v.setUint32(o, i)) 4
 let writeUInt8 (i:uint8): State<unit,SerializationState> = write (fun v o -> v.setUint8(o, i)) 1
 let writeBool (i:bool): State<unit,SerializationState> = write (fun v o -> v.setInt8(o, if i then 1y else 0y)) 1
-let writeString (x:string): State<unit,SerializationState> =
+let writeSeq (x:seq<_>) f =
     state {
-        let b = Encoding.UTF8.GetBytes x
-        do! writeUInt8 (uint8 b.Length)
-        let l = b.Length-1
-        for i in 0..l do
-            do! writeUInt8 b.[i]
+        let l = Seq.length x
+        do! writeUInt8 (uint8 l)
+        for i in x do
+            do! f i
+    }
+let writeString (x:string): State<unit,SerializationState> =
+//    state {
+//        let b = Encoding.UTF8.GetBytes x
+//        do! writeUInt8 (uint8 b.Length)
+//        let l = b.Length-1
+//        for i in 0..l do
+//            do! writeUInt8 b.[i]
+//    }
+let writeId (x:Id): State<unit,SerializationState> = writeUInt x.Value
+let writeNode (x:Node): State<unit,SerializationState> =
+    state {
+        do! writeId x.guid
+        do! writeString x.title
+        let px,py = x.pos
+        do! writeInt px
+        do! writeInt py
     }
 //    write (fun v o -> v.setInt8(o, if i then 1y else 0y); 1) i
 let read f : State<'a,SerializationState> =
@@ -67,7 +84,10 @@ let read f : State<'a,SerializationState> =
         return (f s.view) s.offset
     }
 let readUInt8: State<uint8,SerializationState> = read (fun v -> v.getUint8)
+let readUInt: State<uint,SerializationState> = read (fun v -> v.getUint32)
+let readInt: State<int,SerializationState> = read (fun v -> v.getInt32)
 let readBool: State<bool,SerializationState> = read (fun v -> (fun o -> v.getUint8(o) = 1uy))
+let readId: State<Id,SerializationState> = Id.Id <!> readUInt
 let readString: State<string,SerializationState> =
     state {
         let! len = readUInt8
@@ -81,6 +101,24 @@ let readString: State<string,SerializationState> =
         do JS.console.log("    ARR", arr)
         return Encoding.UTF8.GetString(arr)
     }
+let readNode: State<Node, SerializationState> =
+    state {
+        let! id = readId
+        let! title = readString
+        let! px = readInt
+        let! py = readInt
+        return {
+            guid = id
+            title = title
+            pos = px,py
+            inputs = []
+            outputs = []
+        }
+    }
+//    state {
+//        let! i = readUInt
+//        return Id.Id i
+//    }
 //    read (fun v -> (fun o -> v.getUint8(o) = 1uy))
 //    state {
 //        let! s = getState
@@ -92,9 +130,9 @@ let writeState buffer w =
     let s:SerializationState = {offset=0; view=if buffer = null then null else JS.Constructors.DataView.Create(buffer)}
     let x, s = w s
     x
-let test (m:SerializationModel) =
-
-    let w = state {
+    
+let serialize (m:SerializationModel) =
+    state {
         do! writeBool m.options.NodeBorders
         do! writeBool m.options.ShowPorts
         do! writeBool m.options.ShowIds
@@ -102,18 +140,28 @@ let test (m:SerializationModel) =
         let! s = getState
         return s.offset
     }
-    
-    let len = writeState null w
+let deserialize =
+    state {
+      let! i = readBool  
+      let! b = readBool
+      let! j = readBool
+      let! s = readString
+      let m:SerializationModel = {
+          options = { RenderOptions.Default with
+                        NodeBorders = i
+                        ShowPorts = b
+                        ShowIds = j}
+          nodes = [||]
+          edges = [||]
+      }
+      return m
+    }
+let test (m:SerializationModel) =
+    let len = serialize m |> writeState null
     JS.console.log("BUFFER LEN", len)
 
     let b = JS.Constructors.ArrayBuffer.Create(len)
-    let r = writeState b w
+    let r =  serialize m |> writeState b
     JS.console.log("BUFFER",b, r)
-    let x = state {
-              let! i = readBool  
-              let! b = readBool
-              let! j = readBool
-              let! s = readString
-              return i,b,j,s
-            } |> writeState b
+    let x = deserialize |> writeState b
     printf "READ %O" x
