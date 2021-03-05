@@ -39,7 +39,9 @@ let cmdLayout m =
     let m2 = layout m
     m2, Navigation.modifyUrl (sprintf "#/graph/%s" (App.Serialization.toBase64String <| App.Serialization.toJson m2))
 
+App.BinarySerialization.test()
 let update (msg:Msg) (model:Model): Model * Cmd<Msg> =
+//    App.BinarySerialization.test()
     match msg with
     | Layout -> cmdLayout model
     | Move(n, newPos) -> {model with graph = {model.graph with nodes = Map.change n (fun x -> { x.Value with pos = newPos } |> Some) model.graph.nodes}} |> cmdLayout
