@@ -261,13 +261,19 @@ let toBase64 (m: Model) =
     let res2 = base64Arraybuffer.encode (b2.buffer)
     res2
 
-let fromBase64 (s: string) =
-    let decoded = base64Arraybuffer.decode s
+let fromBase64 (s: string): Result<Model, string> =
+    try
+        let decoded = base64Arraybuffer.decode s
 
-    let decompressed =
-        lz4js.decompress
-        <| JS.Constructors.Uint8Array.Create(decoded, 0, decoded.byteLength)
+        let decompressed =
+            lz4js.decompress
+            <| JS.Constructors.Uint8Array.Create(decoded, 0, decoded.byteLength)
 
-    deserialize
-    |> writeState decompressed.buffer
-    |> SerializationModel.toModel
+        deserialize
+        |> writeState decompressed.buffer
+        |> SerializationModel.toModel
+        |> Result.Ok
+    with
+        | ex ->
+//            printfn "CAUGHT"
+            Result.Error <| ex.ToString()

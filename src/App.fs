@@ -150,17 +150,16 @@ let update (msg: Msg) (model: Model): Model * Cmd<Msg> =
         printfn "READ CLIP"
         model, Cmd.OfAsync.result (readClipboard ())
     | LoadJson (data, format) ->
-        let m =
+        let res =
             match format with
-            | Format.Json ->
-                match App.Serialization.fromJson data with
-                | Ok m -> m
+            | Format.Json -> App.Serialization.fromJson data
+            | Format.B64 -> App.BinarySerialization.fromBase64 data
+        match res with
+                | Ok m -> cmdLayout m
                 | Error e ->
                     eprintfn "Error: %A" e
-                    model
-            | Format.B64 -> App.BinarySerialization.fromBase64 data
+                    init None
 
-        cmdLayout m
     | ToggleBurger ->
         { model with
               isBurgerOpen = not model.isBurgerOpen },
