@@ -10,6 +10,7 @@ open App.Types
 open App.GraphLayout
 open App.View
 open Thoth.Elmish
+open Thoth.Json
 
 Fable.Core.JsInterop.importAll "bulma-tooltip"
 Fable.Core.JsInterop.importAll "@fortawesome/fontawesome-free/js/all"
@@ -51,9 +52,9 @@ let cmdLayout m =
 
     let (debouncerModel, debouncerCmd) =
         m.Debouncer
-        |> Debouncer.bounce (TimeSpan.FromSeconds 1.5) "user_input" UpdateUrl
+        |> Debouncer.bounce (TimeSpan.FromSeconds 0.8) "user_input" UpdateUrl
 
-    { m2 with Debouncer = debouncerModel }, Cmd.batch [ Cmd.map DebouncerSelfMsg debouncerCmd ]
+    { m2 with GraphState = GraphState.PendingLayout; Debouncer = debouncerModel }, Cmd.batch [ Cmd.map DebouncerSelfMsg debouncerCmd ]
 
 
 let update (msg: Msg) (model: Model): Model * Cmd<Msg> =
@@ -171,7 +172,7 @@ let update (msg: Msg) (model: Model): Model * Cmd<Msg> =
         { model with
               Debouncer = debouncerModel },
         debouncerCmd
-    | UpdateUrl -> model, Navigation.modifyUrl (sprintf "#/graph/%s" (App.BinarySerialization.toBase64 model))
+    | UpdateUrl -> { model with GraphState = GraphState.Ready }, Navigation.modifyUrl (sprintf "#/graph/%s" (App.BinarySerialization.toBase64 model))
     | GotShortUrl url ->
         model, match url with
                | Result.Error e -> sprintf "Error getting the short url: %s" e

@@ -93,8 +93,9 @@ let graphText (mode: GraphTextMode) model =
         |> String.concat "\n"
         |> sprintf "```\n%s\n%s\n```" url
 
-let menuItemColor label icon color tooltip onClick =
+let menuItemColor label icon color tooltip disabled onClick =
     Button.a [ Button.Option.Color color
+               Button.Disabled disabled
                Button.OnClick(fun _ -> onClick ())
                Button.Props [ Tooltip.dataTooltip tooltip ]
                Button.CustomClass(sprintf "%s %s" Tooltip.ClassName Tooltip.IsTooltipBottom) ] [
@@ -111,10 +112,10 @@ let menuItemColor label icon color tooltip onClick =
 let getShortUrl () =
     let token = "1b8205de688cac49c75d4d60e24bf3155b7043f3"
     async {
-        let requestData = JS.JSON.stringify {|
-            long_url= sprintf "https://unicode-graphs.netlify.app/%s" Browser.Dom.window.location.hash
-            domain="bit.ly"
-        |}
+        let requestData = {|
+                            long_url= sprintf "https://unicode-graphs.netlify.app/%s" Browser.Dom.window.location.hash
+                            domain="bit.ly"
+                          |} |> JS.JSON.stringify 
         let url= "https://api-ssl.bitly.com/v4/shorten"
         let! response =
             Http.request url
@@ -143,9 +144,11 @@ let navbarView model dispatch =
                 span [] [ str "Unicode Graphs" ]
             ]
             Navbar.Item.div [] [
-                menuItemColor "New Node" "fa fa-plus" Color.IsPrimary "Add a new node" (fun _ ->
+                menuItemColor "New Node" "fa fa-plus" Color.IsPrimary "Add a new node" false (fun _ ->
                     dispatch (AddNode(Graph.GraphBuilder(model.graph).nextId(), "New")))
-                menuItemColor "Get Short URL" "fa fa-upload" Color.IsLight "Load Json from clipboard" (fun _ ->
+            ]
+            Navbar.Item.div [] [
+                menuItemColor "Get Short URL" "fa fa-upload" Color.IsLight "Get a shortened bitly url" (model.GraphState = GraphState.PendingLayout) (fun _ ->
                             dispatch GetShortUrl)
             ]
 
@@ -159,11 +162,11 @@ let navbarView model dispatch =
             Navbar.Start.div [] [
                 Navbar.Item.div [] [
                     Button.list [] [
-                        menuItem "Text" "fa fa-copy" "Copy graph as text" (fun _ ->
+                        menuItem "Text" "fa fa-copy" "Copy graph as text" false (fun _ ->
                             copyClipboard (graphText GraphTextMode.Raw model))
-                        menuItem "Md" "fab fa-slack" "Copy graph as markdown" (fun _ ->
+                        menuItem "Md" "fab fa-slack" "Copy graph as markdown" false (fun _ ->
                             copyClipboard (graphText GraphTextMode.Markdown model))
-                        menuItem "Comment" "fa fa-code" "Copy graph as code comment" (fun _ ->
+                        menuItem "Comment" "fa fa-code" "Copy graph as code comment" false (fun _ ->
                             copyClipboard (graphText GraphTextMode.Comment model))
                     ]
                 ]
@@ -171,9 +174,9 @@ let navbarView model dispatch =
             Navbar.End.div [] [
                 Navbar.Item.div [] [
                     Button.list [] [
-                        menuItemColor "Copy Json" "fa fa-download" Color.IsLight "Copy Json to clipboard" (fun _ ->
+                        menuItemColor "Copy Json" "fa fa-download" Color.IsLight "Copy Json to clipboard" false (fun _ ->
                             copyJsonToClipboard model)
-                        menuItemColor "Load Json" "fa fa-upload" Color.IsLight "Load Json from clipboard" (fun _ ->
+                        menuItemColor "Load Json" "fa fa-upload" Color.IsLight "Load Json from clipboard" false (fun _ ->
                             dispatch Msg.ReadClipboard)
                     ]
                 ]

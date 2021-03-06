@@ -31,6 +31,9 @@ type PortEntry =
       position: Pos
       direction: Direction }
 
+[<RequireQualifiedAccess>]
+type GraphState = Ready | PendingLayout
+
 type Model =
     { graph: Graph
       options: RenderOptions
@@ -41,7 +44,8 @@ type Model =
       deltaPos: Pos option
       edgeCandidate: Pos option
       isBurgerOpen: bool
-      Debouncer: Debouncer.State }
+      Debouncer: Debouncer.State
+      GraphState: GraphState }
     member this.selectedNode: Node option =
         Option.bind (fun id -> this.graph.nodes |> Map.tryFind id) this.selectedId
 
@@ -65,7 +69,8 @@ let newModel (g: Graph) =
       deltaPos = None
       edgeCandidate = None
       isBurgerOpen = false
-      Debouncer = Debouncer.create () }
+      Debouncer = Debouncer.create ()
+      GraphState = GraphState.PendingLayout }
 
 let (|SelectedNode|_|) (model: Model) =
     Option.bind (fun id -> model.graph.nodes |> Map.tryFind id) model.selectedId
