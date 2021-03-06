@@ -172,6 +172,23 @@ let update (msg: Msg) (model: Model): Model * Cmd<Msg> =
               Debouncer = debouncerModel },
         debouncerCmd
     | UpdateUrl -> model, Navigation.modifyUrl (sprintf "#/graph/%s" (App.BinarySerialization.toBase64 model))
+    | GotShortUrl url ->
+        model, match url with
+               | Result.Error e -> sprintf "Error getting the short url: %s" e
+                                   |> Toast.message |> Toast.noTimeout |> Toast.withCloseButton
+                                   |> Toast.error
+               | Result.Ok url ->
+                   App.View.copyClipboard url
+                   sprintf "Short link copied to clipboard: %s" url |> Toast.message |> Toast.info
+
+    | GetShortUrl ->
+        let a = async {
+            let! x = App.View.getShortUrl ()
+            return GotShortUrl x
+            }
+        in
+        model, Cmd.OfAsync.result a |> Cmd. map (fun x -> x)
+
 //    | _ -> failwithf "Message not implemented: %A" msg
 
 
@@ -196,6 +213,7 @@ Program.mkProgram init update view
                     dispatch x))
 
         Browser.Dom.window.onmouseup <- (fun _ -> dispatch EndDragAndDrop)))
+|> Toast.Program.withToast Toast.render
 |> Program.toNavigable (parseHash route) urlUpdate
 //|> Program.withReactSynchronous "elmish-app"
 |> Program.withReactBatched "elmish-app"

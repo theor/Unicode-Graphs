@@ -100,3 +100,5 @@ type Msg =
     | ToggleBurger
     | DebouncerSelfMsg of Debouncer.SelfMessage<Msg>
     | UpdateUrl
+    | GetShortUrl
+    | GotShortUrl of Result<string, string>

@@ -1,12 +1,15 @@
 module App.View
 
 open App.Types
+open Browser.Types
 open Fable.Core
 open Fable.Import
 open Fable.React
 open Fable.React.Props
+open Fable.SimpleHttp
 open Fulma
 open Fulma.Extensions.Wikiki
+open Thoth.Json
 
 
 [<StringEnum; RequireQualifiedAccess>]
@@ -105,6 +108,28 @@ let menuItemColor label icon color tooltip onClick =
                 ]
     ]
 
+let getShortUrl () =
+    let token = "1b8205de688cac49c75d4d60e24bf3155b7043f3"
+    async {
+        let requestData = JS.JSON.stringify {|
+            long_url= sprintf "https://unicode-graphs.netlify.app/%s" Browser.Dom.window.location.hash
+            domain="bit.ly"
+        |}
+        let url= "https://api-ssl.bitly.com/v4/shorten"
+        let! response =
+            Http.request url
+            |> Http.method HttpMethod.POST
+            |> Http.content (BodyContent.Text requestData)
+            |> Http.header (Headers.contentType "application/json")
+            |> Http.header (Headers.authorization (sprintf "Bearer %s" token))
+            |> Http.send
+        do printfn "Content: %s" response.responseText
+        if response.statusCode <> 200 && response.statusCode <> 201
+        then return Result.Error <| sprintf "%i: %s" response.statusCode response.responseText
+        else return response.responseText |> Decode.fromString (Decode.field "link" Decode.string)
+//        do printfn "Status: %d" response.statusCode
+    }
+
 let menuItem label icon tooltip onClick =
     menuItemColor label icon Color.IsLink tooltip onClick
 
@@ -120,6 +145,8 @@ let navbarView model dispatch =
             Navbar.Item.div [] [
                 menuItemColor "New Node" "fa fa-plus" Color.IsPrimary "Add a new node" (fun _ ->
                     dispatch (AddNode(Graph.GraphBuilder(model.graph).nextId(), "New")))
+                menuItemColor "Get Short URL" "fa fa-upload" Color.IsLight "Load Json from clipboard" (fun _ ->
+                            dispatch GetShortUrl)
             ]
 
             Navbar.burger [ Navbar.Burger.Option.OnClick(fun _ -> dispatch ToggleBurger) ] [
