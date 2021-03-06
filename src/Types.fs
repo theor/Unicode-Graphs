@@ -2,6 +2,7 @@ module App.Types
 
 open App.Geometry
 open App.Graph
+open Thoth.Elmish
 [<Struct>]
 type RenderOptions = {
     CanvasWidth: int option
@@ -40,6 +41,7 @@ type Model = {
     deltaPos: Pos option
     edgeCandidate: Pos option
     isBurgerOpen: bool
+    Debouncer : Debouncer.State
 
     }
     with
@@ -62,7 +64,8 @@ let newModel(g:Graph) =
       /// Delta between node pos (top left corner) and actual mouse click (eg. the node center) used when moving a node
       deltaPos = None
       edgeCandidate = None
-      isBurgerOpen = false }
+      isBurgerOpen = false
+      Debouncer = Debouncer.create() }
 
 let (|SelectedNode|_|) (model : Model) = Option.bind (fun id -> model.graph.nodes |> Map.tryFind id) model.selectedId
 let (|SelectedEdge|_|) (model : Model) = Option.bind (fun id -> model.graph.edges |> Map.tryFind id) model.selectedId
@@ -87,4 +90,6 @@ type Msg =
 | ReadClipboard
 | LoadJson of string * Format
 | ToggleBurger
+| DebouncerSelfMsg of Debouncer.SelfMessage<Msg>
+| UpdateUrl
 

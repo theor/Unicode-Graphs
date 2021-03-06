@@ -1,5 +1,6 @@
 module App
 
+open System
 open Elmish
 open Elmish.React
 open Elmish.Debug
@@ -8,6 +9,7 @@ open App.Graph
 open App.Types
 open App.GraphLayout
 open App.View
+open Thoth.Elmish
 
 Fable.Core.JsInterop.importAll "bulma-tooltip"
 Fable.Core.JsInterop.importAll "@fortawesome/fontawesome-free/js/all"
@@ -37,7 +39,11 @@ let init(initRoute: Route option) : Model * Cmd<Msg> =
 
 let cmdLayout m =
     let m2 = layout m
-    m2, Navigation.modifyUrl (sprintf "#/graph/%s" (App.BinarySerialization.toBase64 m2))
+    let (debouncerModel, debouncerCmd) =
+            m.Debouncer
+            |> Debouncer.bounce (TimeSpan.FromSeconds 1.5) "user_input" UpdateUrl
+    { m2 with Debouncer = debouncerModel }, Cmd.batch [ Cmd.map DebouncerSelfMsg debouncerCmd ]
+    
 
 let update (msg:Msg) (model:Model): Model * Cmd<Msg> =
 //    App.Serialization.toBin model
@@ -91,6 +97,11 @@ let update (msg:Msg) (model:Model): Model * Cmd<Msg> =
                 | Format.B64 -> App.BinarySerialization.fromBase64 data
         cmdLayout m
     | ToggleBurger -> { model with isBurgerOpen = not model.isBurgerOpen }, Cmd.none
+    | DebouncerSelfMsg debouncerMsg ->
+        let (debouncerModel, debouncerCmd) = Debouncer.update debouncerMsg model.Debouncer
+        { model with Debouncer = debouncerModel }, debouncerCmd
+    | UpdateUrl ->
+        model, Navigation.modifyUrl (sprintf "#/graph/%s" (App.BinarySerialization.toBase64 model))
     | _ -> failwithf "Message not implemented: %A" msg
 
 

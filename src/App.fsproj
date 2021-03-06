@@ -30,5 +30,6 @@
     <PackageReference Include="Fable.Elmish.React" Version="3.0.1" />
     <PackageReference Include="Fulma" Version="2.10.0" />
     <PackageReference Include="Fulma.Extensions.Wikiki.Tooltip" Version="3.0.0" />
+    <PackageReference Include="Thoth.Elmish.Debouncer" Version="1.0.0" />
   </ItemGroup>
 </Project>
