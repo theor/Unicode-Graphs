@@ -16,7 +16,7 @@ let portChar = "\u25CC"
 type MouseState = None | Down | Move | Up
 
 let getId (e:MouseEvent): Id option =
-    let elem = e.target :?> Browser.Types.HTMLElement
+    let elem = e.target :?> HTMLElement
 //    JS.console.log("Under cursor:", elem, e)
     if not <| JsInterop.isNullOrUndefined elem then
         match elem.dataset.Item "nid" with
@@ -43,7 +43,6 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
          let rect = graphElt.getBoundingClientRect()
          float model.options.ActualCanvasWidth * (e.clientX - rect.left) / rect.width |> int32,
          float model.options.ActualCanvasHeight * (e.clientY - rect.top) / rect.height |> int32
-    let ifBorderThenOne = if model.options.NodeBorders then 1 else 0
 
     match state with
     | MouseState.Down ->
@@ -53,7 +52,7 @@ let onMouseMove (dispatch: Msg -> unit) (model:Model) (state:MouseState) (e:Mous
             | None ->
                 match pickedId |> Option.bind (model.ports.TryFind) with
                 | None -> None,None
-                | Some p -> pickedId, Some <| getCurrentCoords()
+                | Some _ -> pickedId, Some <| getCurrentCoords()
             | Some n ->
                 let x,y = getCurrentCoords() in
                 let nx,ny = n.pos in
@@ -143,7 +142,7 @@ let render dispatch (model:Model) =
 
     let renderEdgeFromTo id rfx rfy rtx rty (offset:int8) =
         let mutable (i,j) = rfx,rfy
-        let edgeCenterX, edgeCenterY = (i+rtx)/2+ (int offset), (j+rty)/2
+        let edgeCenterX = (i+rtx)/2+ (int offset)
         let dirX, dirY = sign (rtx-i), sign (rty-j)
         let needHorizontalMove = i <> edgeCenterX
 
@@ -249,22 +248,26 @@ let render dispatch (model:Model) =
                         let mutable sb = StringBuilder(options.ActualCanvasWidth)
                         sb <- sb.Append c
 
+                        let makeSpan() =
+                            span (seq {
+                                        yield Data("nid", id.Value)
+                                        if id.Value <> 0u then yield Class "is-clickable"
+                                        if model.selectedId = Some(id) then yield Class "selected has-text-primary"
+                                        if model.highlightedId = Some(id) && model.highlightedId <> model.selectedId then yield Class "highlighted has-text-info"
+                                    }) [str <| sb.ToString()]
+
                         let lineContent = seq {
 
                             while i < line.Length do
                                 let c,nextId = line.[i]
                                 if id <> nextId then
-                                    yield span (seq {
-                                        yield Data("nid", id.Value)
-                                        if model.selectedId = Some(id) then yield Class "selected has-text-primary"
-                                        if model.highlightedId = Some(id) && model.highlightedId <> model.selectedId then yield Class "highlighted has-text-info"
-                                    }) [str <| sb.ToString()]
+                                    yield makeSpan()
                                     sb <- sb.Clear()
                                 sb <- sb.Append c
                                 id <- nextId
                                 i <- i + 1
                             if sb.Length > 0 then
-                                yield span [ Data("nid", id.Value) ] [str <| sb.ToString()]
+                                yield makeSpan()
                         }
                         yield pre [] lineContent
                     })

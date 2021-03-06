@@ -1,16 +1,9 @@
 module App.View
 open App.Types
-open Elmish
 open Fable.Core
-open Fable.Core.JS
-open Fable.Core.JsInterop
 open Fable.Import
 open Fable.React
 open Fable.React.Props
-open Fulma
-open Fulma
-open Fulma
-open Fulma
 open Fulma
 open Fulma.Extensions.Wikiki
 
@@ -28,11 +21,11 @@ type Permission =
 [<Emit("""
 navigator.permissions.query({name: $0})
 """)>]
-let requestPermission(perm:Permission): Promise<PermissionStatus> = jsNative
+let requestPermission(_perm:Permission): JS.Promise<PermissionStatus> = jsNative
 
 let readClipboard (): Async<Msg> =
   async {
-    let! p = Async.AwaitPromise <| requestPermission(Permission.ClipboardRead)
+    let! _p = Async.AwaitPromise <| requestPermission(Permission.ClipboardRead)
     let! text = Async.AwaitPromise <| Browser.Navigator.navigator.clipboard.Value.readText ()
     return Msg.LoadJson(text, Format.Json)
   }
@@ -70,7 +63,10 @@ let menuItemColor label icon color tooltip onClick =
       yield Icon.icon [] [
           i [Class <| icon] []
       ]
-      if not <| System.String.IsNullOrEmpty label then yield span [] [str label]
+      if not <| System.String.IsNullOrEmpty label
+      then yield Fulma.Text.span [
+//                  Modifiers [ Modifier.IsHidden(Screen.Desktop, true) ]
+            ] [str label]
     ]
 
 let menuItem label icon tooltip onClick = menuItemColor label icon Color.IsLink tooltip onClick
@@ -85,13 +81,9 @@ let navbarView model dispatch =
         span [] [str "Unicode Graphs"]
       ]
       Navbar.Item.div [] [
-        Button.list [] [
           menuItemColor "New Node" "fa fa-plus" Color.IsPrimary "Add a new node" (fun _ -> dispatch (AddNode(Graph.GraphBuilder(model.graph).nextId(), "New")))
-          menuItem "" "fa fa-copy" "Copy graph as text" (fun _ -> copyClipboard(graphText GraphTextMode.Raw model))
-          menuItem "" "fab fa-slack" "Copy graph as markdown" (fun _ -> copyClipboard(graphText GraphTextMode.Markdown model))
-          menuItem "" "fa fa-code" "Copy graph as code comment" (fun _ -> copyClipboard(graphText GraphTextMode.Comment model))
-        ]
       ]
+
       Navbar.burger [ Navbar.Burger.Option.OnClick (fun _ -> dispatch ToggleBurger)] [
         span [] []
         span [] []
@@ -99,12 +91,20 @@ let navbarView model dispatch =
       ]
     ]
     Navbar.menu [ Navbar.Menu.IsActive model.isBurgerOpen ] [
-      Navbar.Start.div [] []
+      Navbar.Start.div [] [
+        Navbar.Item.div [] [
+        Button.list [] [
+          menuItem "Text" "fa fa-copy" "Copy graph as text" (fun _ -> copyClipboard(graphText GraphTextMode.Raw model))
+          menuItem "Md" "fab fa-slack" "Copy graph as markdown" (fun _ -> copyClipboard(graphText GraphTextMode.Markdown model))
+          menuItem "Comment" "fa fa-code" "Copy graph as code comment" (fun _ -> copyClipboard(graphText GraphTextMode.Comment model))
+        ]
+      ]
+      ]
       Navbar.End.div [] [
         Navbar.Item.div [] [
           Button.list [] [
-            menuItem "" "fa fa-download" "Copy Json to clipboard" (fun _ -> copyJsonToClipboard model)
-            menuItem "" "fa fa-upload" "Load Json from clipboard" (fun _ -> dispatch Msg.ReadClipboard)
+            menuItemColor "Copy Json" "fa fa-download" Color.IsLight "Copy Json to clipboard" (fun _ -> copyJsonToClipboard model)
+            menuItemColor "Load Json" "fa fa-upload" Color.IsLight "Load Json from clipboard" (fun _ -> dispatch Msg.ReadClipboard)
           ]
         ]
       ]
@@ -121,8 +121,8 @@ let view (model:Model) dispatch =
                 yield! (GraphRender.render dispatch model |> Seq.toList)
               ]
               Column.column [] [
-                App.EditorView.view model dispatch
-                Fulma.Message.message [] [
+                EditorView.view model dispatch
+                Message.message [] [
                   Message.header [] [str "How to use"]
                   Message.body [] [
                     Fulma.Content.content [] [
@@ -156,7 +156,7 @@ let view (model:Model) dispatch =
           ]
       ]
       Footer.footer [] [
-        Content.content [ Content.Option.Modifiers [ Modifier.IModifier.TextAlignment(Screen.All, Fulma.TextAlignment.Centered) ] ] [
+        Content.content [ Content.Option.Modifiers [ Modifier.IModifier.TextAlignment(Screen.All, TextAlignment.Centered) ] ] [
           p [] [
             strong [] [str "Unicode Graphs"]
             str " by "

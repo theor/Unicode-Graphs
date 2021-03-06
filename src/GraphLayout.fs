@@ -53,7 +53,7 @@ let layout (model:Model) =
     let portData =
         model.graph.nodes
         |> Map.toSeq
-        |> Seq.map (fun (k,n) -> (n,Seq.concat [
+        |> Seq.map (fun (_,n) -> (n,Seq.concat [
             Seq.indexed n.inputs |> Seq.map (fun p -> p,Direction.Input)
             Seq.indexed n.outputs |> Seq.map (fun p -> p,Direction.Output)
         ]))
