@@ -18,8 +18,9 @@ type PermissionStatusState =
     | Denied
     | Prompt
 
-type PermissionStatus =
-    abstract state: PermissionStatusState
+type PermissionStatus = {
+    state: PermissionStatusState
+}
 
 [<StringEnum; RequireQualifiedAccess>]
 type Permission =
@@ -29,13 +30,16 @@ type Permission =
 [<Emit("""
 navigator.permissions.query({name: $0})
 """     )>]
-let requestPermission (_perm: Permission): JS.Promise<PermissionStatus> = jsNative
+let queryPermission (_perm: Permission): JS.Promise<PermissionStatus> = jsNative
+
+// firefox doesn't support the permission, but the copy to clipboard will actually work
+let queryPermissionWrap (perm: Permission) = queryPermission perm |> Promise.either U2.Case1 (fun _ -> U2.Case1 {state=PermissionStatusState.Denied})
 
 let readClipboard (): Async<Msg> =
     async {
         let! _p =
             Async.AwaitPromise
-            <| requestPermission (Permission.ClipboardRead)
+            <| queryPermission (Permission.ClipboardRead)
 
         let! text =
             Async.AwaitPromise
@@ -46,9 +50,9 @@ let readClipboard (): Async<Msg> =
 
 let copyClipboard (content: string) =
     async {
-        let! _ =
+        let! _p =
             Async.AwaitPromise
-            <| requestPermission (Permission.ClipboardWrite)
+            <| queryPermissionWrap (Permission.ClipboardWrite)
 
         do! Async.AwaitPromise
             <| Browser.Navigator.navigator.clipboard.Value.writeText content
