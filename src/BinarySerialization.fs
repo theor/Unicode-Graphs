@@ -17,7 +17,7 @@ type ILz4js =
 let base64Arraybuffer: IBase64Arraybuffer = JsInterop.importAll "base64-arraybuffer"
 let lz4js: ILz4js = JsInterop.importAll "lz4js"
 
-type SerializationState = { view: JS.DataView; offset: int }
+type SerializationState = { view: JS.DataView; offset: int; version: uint8 }
 
 type SerializationModel =
     { options: RenderOptions
@@ -202,16 +202,17 @@ let readEdge: State<Edge, SerializationState> =
 let writeState buffer w =
     let s: SerializationState =
         { offset = 0
+          version = 0uy
           view = if buffer = null then null else JS.Constructors.DataView.Create(buffer) }
 
     let x, _ = w s
     x
 
+let lastVersion = 2uy
 let serialize (m: SerializationModel) =
     state {
         // todo : the now removed NodeBorders options writes a byte that is either 0 or 1. use it as a version number
-        do! writeBool false //m.options.NodeBorders
-        do! writeBool false //m.options.ShowPorts
+        do! writeUInt8 lastVersion
         do! writeBool m.options.ShowIds
         do! writeSeq m.nodes writeNode
         do! writeSeq m.edges writeEdge
@@ -222,8 +223,14 @@ let serialize (m: SerializationModel) =
 
 let deserialize =
     state {
-        let! _nodeBorders = readBool
-        let! _showPorts = readBool
+        let! version = readUInt8
+        printf "Binary format version: %i" version
+        let! state = getState
+        do! putState {state with version = version}
+        if version <= 1uy then
+//        let! _nodeBorders = readBool
+            let! _showPorts = readBool
+            ()
         let! showIds = readBool
         let! nodes = readSeq readNode
         let! edges = readSeq readEdge
