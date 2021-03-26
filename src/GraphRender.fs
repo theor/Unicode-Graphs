@@ -117,8 +117,7 @@ let render dispatch (model: Model) =
     let options = model.options
     let g = model.graph
 
-    let ifBorderThenOne =
-        if model.options.NodeBorders then 1 else 0
+    let ifBorderThenOne = 1
 
     let mutable b =
         Array.create
@@ -143,26 +142,25 @@ let render dispatch (model: Model) =
     let renderNode guid n =
         let r = Map.find guid model.nodeSizes
 
-        if model.options.NodeBorders then
-            for j in 0 .. r.H - 1 do
-                for i in 0 .. r.W - 1 do
-                    let c =
-                        match (i, j) with
-                        | 0, 0 -> '\u250c' // top left
-                        | (0, _) when j = r.H - 1 -> '\u2514' // bottom left
-                        | _, 0 when i = r.W - 1 -> '\u2510' // top right
-                        | _, _ when i = r.W - 1 && j = r.H - 1 -> '\u2518' // bottom right
-                        | _, _ when j = 0 || j = r.H - 1 -> '\u2500' // top or bottom
-                        | _, _ when i = 0 || i = r.W - 1 -> '\u2502' // left or right
-                        | _ -> '.'
+        for j in 0 .. r.H - 1 do
+            for i in 0 .. r.W - 1 do
+                let c =
+                    match (i, j) with
+                    | 0, 0 -> '\u250c' // top left
+                    | (0, _) when j = r.H - 1 -> '\u2514' // bottom left
+                    | _, 0 when i = r.W - 1 -> '\u2510' // top right
+                    | _, _ when i = r.W - 1 && j = r.H - 1 -> '\u2518' // bottom right
+                    | _, _ when j = 0 || j = r.H - 1 -> '\u2500' // top or bottom
+                    | _, _ when i = 0 || i = r.W - 1 -> '\u2502' // left or right
+                    | _ -> '.'
 
-                    set
-                        (r.X + i)
-                        (r.Y + j)
-                        (if i = 0 || i = (r.W - 1) || j = (r.H - 1) || j = 0
-                         then c
-                         else ' ')
-                        guid
+                set
+                    (r.X + i)
+                    (r.Y + j)
+                    (if i = 0 || i = (r.W - 1) || j = (r.H - 1) || j = 0
+                     then c
+                     else ' ')
+                    guid
 
         let titleHeight = if GraphLayout.hasTitle n then 1 else 0
 
@@ -172,18 +170,17 @@ let render dispatch (model: Model) =
                 (r.Y + ifBorderThenOne)
                 n.title
                 guid
-        if model.options.ShowPorts then
-            n.inputs
-            |> List.iteri (fun i p ->
-                renderLabel (r.X + 1) (r.Y + titleHeight + i + ifBorderThenOne) (portChar + p.title) p.guid)
+        n.inputs
+        |> List.iteri (fun i p ->
+            renderLabel (r.X + 1) (r.Y + titleHeight + i + ifBorderThenOne) (portChar + p.title) p.guid)
 
-            n.outputs
-            |> List.iteri (fun i p ->
-                renderLabel
-                    (r.X + r.W - 2 * ifBorderThenOne - p.title.Length)
-                    (r.Y + titleHeight + i + ifBorderThenOne)
-                    (p.title + portChar)
-                    p.guid)
+        n.outputs
+        |> List.iteri (fun i p ->
+            renderLabel
+                (r.X + r.W - 2 * ifBorderThenOne - p.title.Length)
+                (r.Y + titleHeight + i + ifBorderThenOne)
+                (p.title + portChar)
+                p.guid)
 
         ()
 
@@ -255,12 +252,12 @@ let render dispatch (model: Model) =
         Option.map2 (fun a b -> a, b) (Map.tryFind fromNodeId model.nodeSizes) (Map.tryFind toNodeId model.nodeSizes)
         |> Option.iter (fun (rf, rt) ->
             let rfx, rfy =
-                if not options.ShowPorts || fromIndex = Byte.MaxValue
+                if fromIndex = Byte.MaxValue
                 then rf.Center
                 else getPortPosition fromNodeId fromIndex Direction.Output
 
             let rtx, rty =
-                if not options.ShowPorts || toIndex = Byte.MaxValue
+                if toIndex = Byte.MaxValue
                 then rt.Center
                 else getPortPosition toNodeId toIndex Direction.Input
 
@@ -271,7 +268,7 @@ let render dispatch (model: Model) =
         let rf = model.nodeSizes.Item fromNode
 
         let rfx, rfy =
-            if not options.ShowPorts || fromIndex = Byte.MaxValue
+            if fromIndex = Byte.MaxValue
             then rf.Center
             else getPortPosition fromNode fromIndex fromDir
 

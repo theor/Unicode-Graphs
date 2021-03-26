@@ -8,43 +8,35 @@ open Geometry
 let hasTitle n = not <| String.IsNullOrWhiteSpace n.title
 
 let layout (model: Model) =
-    let ifBordersThen2 =
-        (if model.options.NodeBorders then 2 else 0)
-
     let mutable nodeSizes = Map.empty<Id, Rect>
 
     let measureNode guid n =
         let titleHeight = if hasTitle n then 1 else 0
 
         let portWidth =
-            if model.options.ShowPorts then
-                seq {
-                    for i in 0 .. Math.Max(n.inputs.Length, n.outputs.Length) - 1 do
-                        match List.tryItem i n.inputs, List.tryItem i n.outputs with
-                        | Some (a), Some (b) ->
-                            a.title.Length
-                            + b.title.Length
-                            + 3 (* 2*port char + space between them*)
-                            + ifBordersThen2
-                        | Some (x), None
-                        | None, Some (x) -> x.title.Length + 1 + 1 + ifBordersThen2
-                        | _ -> failwith "Impossible"
-                }
-                //                |> Seq.map (fun x -> JS.console.log(x); x)
-                |> (fun l -> if Seq.isEmpty l then Seq.replicate 1 0 else l)
-                |> Seq.max
-            else
-                0
+            seq {
+                for i in 0 .. Math.Max(n.inputs.Length, n.outputs.Length) - 1 do
+                    match List.tryItem i n.inputs, List.tryItem i n.outputs with
+                    | Some (a), Some (b) ->
+                        a.title.Length
+                        + b.title.Length
+                        + 3 (* 2*port char + space between them*)
+                        + 2
+                    | Some (x), None
+                    | None, Some (x) -> x.title.Length + 1 + 1 + 2
+                    | _ -> failwith "Impossible"
+            }
+            //                |> Seq.map (fun x -> JS.console.log(x); x)
+            |> (fun l -> if Seq.isEmpty l then Seq.replicate 1 0 else l)
+            |> Seq.max
 
         let nw, nh =
             n.title.Length
-            + 2 * model.options.Margin
-            + ifBordersThen2,
-            (if model.options.NodeBorders then 2 else 0)
+            + 2
+            + 2,
+            2
             + titleHeight
-            + if model.options.ShowPorts
-              then Math.Max(n.inputs.Length, n.outputs.Length)
-              else 0
+            + Math.Max(n.inputs.Length, n.outputs.Length)
 
         let nw = Math.Max(nw, portWidth)
         let x, y = n.pos
@@ -74,7 +66,7 @@ let layout (model: Model) =
                 r.Y
                 + (if hasTitle node then 1 else 0)
                 + int index
-                + (if model.options.NodeBorders then 1 else 0)
+                + 1
 
             let x =
                 if dir = Direction.Input then r.X else (r.X + r.W)

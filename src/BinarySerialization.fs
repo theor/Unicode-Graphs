@@ -209,8 +209,9 @@ let writeState buffer w =
 
 let serialize (m: SerializationModel) =
     state {
-        do! writeBool m.options.NodeBorders
-        do! writeBool m.options.ShowPorts
+        // todo : the now removed NodeBorders options writes a byte that is either 0 or 1. use it as a version number
+        do! writeBool false //m.options.NodeBorders
+        do! writeBool false //m.options.ShowPorts
         do! writeBool m.options.ShowIds
         do! writeSeq m.nodes writeNode
         do! writeSeq m.edges writeEdge
@@ -221,8 +222,8 @@ let serialize (m: SerializationModel) =
 
 let deserialize =
     state {
-        let! nodeBorders = readBool
-        let! showPorts = readBool
+        let! _nodeBorders = readBool
+        let! _showPorts = readBool
         let! showIds = readBool
         let! nodes = readSeq readNode
         let! edges = readSeq readEdge
@@ -230,8 +231,6 @@ let deserialize =
         let m: SerializationModel =
             { options =
                   { RenderOptions.Default with
-                        NodeBorders = nodeBorders
-                        ShowPorts = showPorts
                         ShowIds = showIds }
               nodes = nodes |> Seq.toArray
               edges = edges |> Seq.toArray }

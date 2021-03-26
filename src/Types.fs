@@ -10,19 +10,13 @@ type RenderOptions =
       CanvasHeight: int option
       ActualCanvasWidth: int
       ActualCanvasHeight: int
-      NodeBorders: bool
-      ShowIds: bool
-      ShowPorts: bool
-      Margin: int }
+      ShowIds: bool }
     static member Default: RenderOptions =
         { CanvasWidth = None
           CanvasHeight = None
-          Margin = 1
           ActualCanvasWidth = 1
           ActualCanvasHeight = 1
-          NodeBorders = true
-          ShowIds = false
-          ShowPorts = true }
+          ShowIds = false }
 
 type PortEntry =
     { port: Port
