@@ -58,6 +58,7 @@ let cmdLayout m =
 
 
 let update (msg: Msg) (model: Model): Model * Cmd<Msg> =
+//    Fable.Core.JS.console.log("update", string msg)
     //    App.Serialization.toBin model
     match msg with
     | Layout -> cmdLayout model
@@ -172,7 +173,13 @@ let update (msg: Msg) (model: Model): Model * Cmd<Msg> =
         { model with
               Debouncer = debouncerModel },
         debouncerCmd
-    | UpdateUrl -> { model with GraphState = GraphState.Ready }, Navigation.modifyUrl (sprintf "#/graph/%s" (App.BinarySerialization.toBase64 model))
+    | UpdateUrl ->
+        let url = sprintf "#/graph/%s" (App.BinarySerialization.toBase64 model) in
+        let alreadyThere = Browser.Dom.window.location.hash = url in
+//        printf "ALREADY THERE: %O"
+        if not alreadyThere then 
+            Browser.Dom.history.pushState(null, url=url)
+        { model with GraphState = GraphState.Ready }, Cmd.none// Navigation.modifyUrl url
     | GotShortUrl url ->
         model, match url with
                | Result.Error e -> sprintf "Error getting the short url: %s" e
@@ -200,8 +207,11 @@ let route =
             map Route.Home top ]
 
 let urlUpdate (result: Route option) model =
-    printfn "URL UPDATE %A" result
-    (model, Cmd.none)
+//    printfn "URL UPDATE %A %A" result model
+    match result with
+    | Some (Route.Graph b64) -> newModel (emptyGraph ()), Cmd.ofMsg (LoadJson(b64, Format.B64))
+    | Some Home -> (newModel (emptyGraph ()), Cmd.none)
+    | None -> (model, Cmd.none)
 
 Program.mkProgram init update view
 |> Program.withSubscription (fun _ ->
@@ -214,8 +224,8 @@ Program.mkProgram init update view
                     dispatch x))
 
         Browser.Dom.window.onmouseup <- (fun _ -> dispatch EndDragAndDrop)))
-|> Toast.Program.withToast Toast.render
 |> Program.toNavigable (parseHash route) urlUpdate
+|> Toast.Program.withToast Toast.render
 //|> Program.withReactSynchronous "elmish-app"
 |> Program.withReactBatched "elmish-app"
 #if DEBUG

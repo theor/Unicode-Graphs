@@ -145,15 +145,17 @@ let navbarView model dispatch =
                 Icon.icon [] [
                     i [ Class "fa fa-project-diagram" ] []
                 ]
-                span [] [ str "Unicode Graphs" ]
+                Fulma.Text.span [ Modifiers [ Modifier.IsHidden (Screen.Touch, true) ] ] [ str "Unicode Graphs" ]
             ]
             Navbar.Item.div [] [
-                menuItemColor "New Node" "fa fa-plus" Color.IsPrimary "Add a new node" false (fun _ ->
-                    dispatch (AddNode(Graph.GraphBuilder(model.graph).nextId(), "New")))
-            ]
-            Navbar.Item.div [] [
-                menuItemColor "Get Short URL" "fa fa-upload" Color.IsLight "Get a shortened bitly url" (model.GraphState = GraphState.PendingLayout) (fun _ ->
-                            dispatch GetShortUrl)
+                Button.list [] [
+                    menuItemColor "New Node" "fa fa-plus" Color.IsPrimary "Add a new node" false (fun _ ->
+                        dispatch (AddNode(Graph.GraphBuilder(model.graph).nextId(), "New")))
+                    menuItemColor "" "fa fa-undo" Color.IsLight "Undo" false (fun _ ->
+                                Browser.Dom.history.back())
+                    menuItemColor "" "fa fa-redo" Color.IsLight "Redo" false (fun _ ->
+                                Browser.Dom.history.forward())
+                ]
             ]
 
             Navbar.burger [ Navbar.Burger.Option.OnClick(fun _ -> dispatch ToggleBurger) ] [
@@ -164,6 +166,13 @@ let navbarView model dispatch =
         ]
         Navbar.menu [ Navbar.Menu.IsActive model.isBurgerOpen ] [
             Navbar.Start.div [] [
+                Navbar.Item.div [] [
+                    Button.list [] [
+                        menuItemColor "Get Short URL" "fa fa-upload" Color.IsLight "Get a shortened bitly url" (model.GraphState = GraphState.PendingLayout) (fun _ ->
+                            dispatch GetShortUrl)
+                    ]
+                ]
+                        
                 Navbar.Item.div [] [
                     Button.list [] [
                         menuItem "Text" "fa fa-copy" "Copy graph as text" false (fun _ ->
@@ -225,6 +234,11 @@ let view (model: Model) dispatch =
                                 Fulma.Content.content [] [
                                     Fulma.Text.div [] [
                                         str "To share a graph, you can just copy the url."
+                                    ]
+                                ]
+                                Fulma.Content.content [] [
+                                    Fulma.Text.div [] [
+                                        str "The browser's history is used for undo/redo"
                                     ]
                                 ]
                                 Fulma.Content.content [] [
