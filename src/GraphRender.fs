@@ -40,7 +40,7 @@ let keyToMessage (e: KeyboardEvent): Msg option =
     //    JS.console.log(e.key, e.code, e.ctrlKey)
     match e.key, e.ctrlKey with
     | "d", true -> Some Duplicate
-    | "Delete", _ -> Some Delete
+    | "Delete", _ | "Backspace",_ -> Some Delete
     | _ -> None
 
 let onMouseMove (dispatch: Msg -> unit) (model: Model) (state: MouseState) (e: MouseEvent) =

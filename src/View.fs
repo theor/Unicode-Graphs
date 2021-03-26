@@ -209,6 +209,8 @@ let view (model: Model) dispatch =
                                         code [] [ str "New Node" ]
                                         str " button to create nodes and the "
                                         code [] [ str "Del" ]
+                                        str " or "
+                                        code [] [ str "Backspace" ]
                                         str " key to delete a node or an edge"
                                     ]
                                     Fulma.Text.div [] [
