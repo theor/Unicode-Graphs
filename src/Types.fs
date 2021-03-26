@@ -98,6 +98,7 @@ type Msg =
     | CreateEdge of Id * Id
     | Delete
     | Duplicate
+    | UndoRedo of bool
     | Layout
     | EndDragAndDrop
     | ReadClipboard

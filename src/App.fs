@@ -62,6 +62,9 @@ let update (msg: Msg) (model: Model): Model * Cmd<Msg> =
     //    App.Serialization.toBin model
     match msg with
     | Layout -> cmdLayout model
+    | UndoRedo isUndo ->
+        if isUndo then Browser.Dom.history.back() else Browser.Dom.history.forward()
+        model, Cmd.none
     | Move (n, newPos) ->
         { model with
               graph =

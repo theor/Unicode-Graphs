@@ -39,6 +39,8 @@ let getNode (model: Model) (e: MouseEvent): Node option =
 let keyToMessage (e: KeyboardEvent): Msg option =
     //    JS.console.log(e.key, e.code, e.ctrlKey)
     match e.key, e.ctrlKey with
+    | "z", true -> Some (UndoRedo true)
+    | "y", true -> Some (UndoRedo false)
     | "d", true -> Some Duplicate
     | "Delete", _ | "Backspace",_ -> Some Delete
     | _ -> None

@@ -238,7 +238,10 @@ let view (model: Model) dispatch =
                                 ]
                                 Fulma.Content.content [] [
                                     Fulma.Text.div [] [
-                                        str "The browser's history is used for undo/redo"
+                                        str "The browser's history is used for undo/redo, which is also mapped to "
+                                        code [] [ str "Ctrl+Z" ]
+                                        str " and "
+                                        code [] [ str "Ctrl+Y" ]
                                     ]
                                 ]
                                 Fulma.Content.content [] [
