@@ -113,7 +113,7 @@ let onMouseMove (dispatch: Msg -> unit) (model: Model) (state: MouseState) (e: M
 
     | _ -> failwith "todo"
 
-let render dispatch (model: Model) =
+let render key editable dispatch (model: Model) =
     let options = model.options
     let g = model.graph
 
@@ -279,7 +279,7 @@ let render dispatch (model: Model) =
     g.nodes |> Map.iter renderNode
     g.edges |> Map.iter renderEdge
 
-    if model.selectedPort.IsSome then
+    if editable && model.selectedPort.IsSome then
         model.edgeCandidate
         |> Option.iter (fun (x, y) ->
             let { direction = direction
@@ -289,58 +289,59 @@ let render dispatch (model: Model) =
 
             renderEdgeCandidate node index direction x y)
 
-    seq {
-        yield
-            div
-                [ HTMLAttr.Id "graph-output"
-                  ClassName "graph-output"
-                  OnMouseMove(onMouseMove dispatch model MouseState.Move)
-                  OnMouseDown(onMouseMove dispatch model MouseState.Down)
-                  OnMouseUp(onMouseMove dispatch model MouseState.Up)
-                  OnDoubleClick
-                      ((getNode model)
-                       >> (fun x -> JS.console.log ("DOUBLE", x))) ]
+    div
+        [ yield Prop.Key key
+          yield HTMLAttr.Id "graph-output"
+          yield ClassName "graph-output"
+          if editable then
+              yield OnMouseMove(onMouseMove dispatch model MouseState.Move)
+              yield OnMouseDown(onMouseMove dispatch model MouseState.Down)
+              yield OnMouseUp(onMouseMove dispatch model MouseState.Up)
+              yield OnDoubleClick
+                  ((getNode model)
+                   >> (fun x -> JS.console.log ("DOUBLE", x))) ]
 
-                (seq {
-                    for line in Seq.chunkBySize options.ActualCanvasWidth b do
-                        match Array.tryItem 0 line with
-                        | None -> ()
-                        | Some (c, id) ->
-                            let mutable i = 1
-                            let mutable id = id
-                            let mutable sb = StringBuilder(options.ActualCanvasWidth)
-                            sb <- sb.Append c
+        (seq {
+            for line in Seq.chunkBySize options.ActualCanvasWidth b do
+                match Array.tryItem 0 line with
+                | None -> ()
+                | Some (c, id) ->
+                    let mutable i = 1
+                    let mutable id = id
+                    let mutable sb = StringBuilder(options.ActualCanvasWidth)
+                    sb <- sb.Append c
 
-                            let makeSpan () =
-                                span
-                                    (seq {
-                                        yield Data("nid", id.Value)
-                                        if id.Value <> 0u then yield Class "is-clickable"
-                                        if model.selectedId = Some(id) then yield Class "selected has-text-primary"
+                    let makeSpan () =
+                        span
+                            (seq {
+                                yield Data("nid", id.Value)
+                                if id.Value <> 0u then yield Class "is-clickable"
+                                if editable && model.selectedId = Some(id) then yield Class "selected has-text-primary"
 
-                                        if model.highlightedId = Some(id)
-                                           && model.highlightedId <> model.selectedId then
-                                            yield Class "highlighted has-text-info"
-                                     })
-                                    [ str <| sb.ToString() ]
+                                if editable && model.highlightedId = Some(id)
+                                   && model.highlightedId <> model.selectedId then
+                                    yield Class "highlighted has-text-info"
+                             })
+                            [ str <| sb.ToString() ]
 
-                            let lineContent =
-                                seq {
+                    let lineContent =
+                        seq {
 
-                                    while i < line.Length do
-                                        let c, nextId = line.[i]
+                            while i < line.Length do
+                                let c, nextId = line.[i]
 
-                                        if id <> nextId then
-                                            yield makeSpan ()
-                                            sb <- sb.Clear()
+                                if id <> nextId then
+                                    yield makeSpan ()
+                                    sb <- sb.Clear()
 
-                                        sb <- sb.Append c
-                                        id <- nextId
-                                        i <- i + 1
+                                sb <- sb.Append c
+                                id <- nextId
+                                i <- i + 1
 
-                                    if sb.Length > 0 then yield makeSpan ()
-                                }
+                            if sb.Length > 0 then yield makeSpan ()
+                        }
 
-                            yield pre [] lineContent
-                 })
-    }
+                    yield pre [] lineContent
+         })
+let renderReadOnly key (model: Model) = render key false (fun _ -> ()) model
+let renderEditable key dispatch (model: Model) = render key true dispatch model

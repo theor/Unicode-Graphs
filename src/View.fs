@@ -1,5 +1,6 @@
 module App.View
 
+open App.Graph
 open App.Types
 open Browser.Types
 open Fable.Core
@@ -197,6 +198,61 @@ let navbarView model dispatch =
         ]
     ]
 
+module Templates =
+    type TemplateBuilder = GraphBuilder -> string
+    let renderTemplate (x:TemplateBuilder):string * Model * TemplateBuilder =
+        let gb = GraphBuilder()
+        let name = x gb
+        name, gb.Build() |> newModel |> App.GraphLayout.layout, x
+    let inputTemplate (gb:GraphBuilder) =
+        gb.AddNode("", (0,0), [], [ "input" ]) |> ignore
+        "Input"
+    let outputTemplate (gb:GraphBuilder) =
+        gb.AddNode("", (0,0), ["output"], []) |> ignore
+        "Output"
+    let inputOutputTemplate (gb:GraphBuilder) =
+        gb.AddNode("", (0,0), ["input"], ["output"]) |> ignore
+        "Input/Output"
+    let inputOutputTitleTemplate (gb:GraphBuilder) =
+        gb.AddNode("Node", (0,0), ["A";"B"], ["C";"D"]) |> ignore
+        "Node"
+    let commentTemplate (gb:GraphBuilder) =
+        gb.AddNode("comment", (0,0), [], []) |> ignore
+        "comment"
+    let templates =
+        [
+            inputTemplate
+            outputTemplate
+            inputOutputTemplate
+            inputOutputTitleTemplate
+            commentTemplate
+        ] |> List.map renderTemplate
+let templateView dispatch (name,template, _) =
+    let onClick e =
+        JS.console.log name
+        dispatch (InstantiateTemplate name)
+    Fulma.Column.column [ Column.Width (Screen.All, Fulma.Column.IsNarrow); Fulma.Column.Props [OnClick onClick] ] [
+        Fulma.Card.card [GenericOption.CustomClass "template-card" ] [
+            Card.image [] [
+                Fulma.Image.image [Image.IsFullwidth  ] [
+                GraphRender.renderReadOnly name template
+                ]
+                
+            ]
+//            Card.header [] [
+//                Card.Header.title [] [str name]
+//            ]
+            Card.content [] [ str name
+            ]
+        ]
+    ]
+let templateGallery dispatch = [
+        Fulma.Text.span [] [ str "Templates" ]
+        Fulma.Columns.columns [ Fulma.Columns.IsMobile; Fulma.Columns.Option.IsGrid; Fulma.Columns.Option.IsMultiline ] [
+            yield! (Templates.templates |> List.map (templateView dispatch  ))
+        ]
+    ]
+
 let view (model: Model) dispatch =
     div [] [
         navbarView model dispatch
@@ -204,7 +260,8 @@ let view (model: Model) dispatch =
             Container.container [] [
                 Columns.columns [] [
                     Column.column [] [
-                        yield! (GraphRender.render dispatch model |> Seq.toList)
+                        yield (GraphRender.renderEditable "main" dispatch model)
+                        yield! templateGallery dispatch
                     ]
                     Column.column [] [
                         EditorView.view model dispatch

@@ -150,7 +150,9 @@ let view (model: Model) dispatch =
     let onKeyDown (e:KeyboardEvent) =
 //        JS.console.log e
         // prevent delete/backspace to bubble up and delete the selected node
-        e.stopPropagation()
+        match e.key with
+        | "Delete" | "Backspace" -> e.stopPropagation()
+        | _ -> ()
     Fulma.Content.content
         [ Fulma.Content.Option.Props [ OnKeyDown onKeyDown ]]
         ([ if model.selectedNode.IsSome

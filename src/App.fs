@@ -62,6 +62,11 @@ let update (msg: Msg) (model: Model): Model * Cmd<Msg> =
     //    App.Serialization.toBin model
     match msg with
     | Layout -> cmdLayout model
+    | InstantiateTemplate templateName ->
+        let gb = GraphBuilder(model.graph)
+        let (_,_,tplBuilder) = App.View.Templates.templates |> List.find (fun (name,_,_) -> name = templateName)
+        tplBuilder gb |> ignore
+        { model with graph = gb.Build() } |> cmdLayout
     | UndoRedo isUndo ->
         if isUndo then Browser.Dom.history.back() else Browser.Dom.history.forward()
         model, Cmd.none

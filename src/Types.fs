@@ -102,3 +102,4 @@ type Msg =
     | UpdateUrl
     | GetShortUrl
     | GotShortUrl of Result<string, string>
+    | InstantiateTemplate of string
