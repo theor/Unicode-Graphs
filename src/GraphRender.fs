@@ -46,7 +46,7 @@ let keyToMessage (e: KeyboardEvent): Msg option =
     | _ -> None
 
 let onMouseMove (dispatch: Msg -> unit) (model: Model) (state: MouseState) (e: MouseEvent) =
-    e.preventDefault ()
+//    e.preventDefault ()
     let graphElt = e.currentTarget :?> HTMLElement
 
     let getCurrentCoords (): Pos =

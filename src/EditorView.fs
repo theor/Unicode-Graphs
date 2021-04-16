@@ -2,6 +2,7 @@ module App.EditorView
 
 open App.Graph
 open Browser.Types
+open Fable.Core
 open Fable.React
 open Fable.React.Props
 open App.Types
@@ -146,8 +147,12 @@ let view (model: Model) dispatch =
                   yield! n.outputs |> List.mapi (portView Direction.Output)
               ] ]
 
+    let onKeyDown (e:KeyboardEvent) =
+//        JS.console.log e
+        // prevent delete/backspace to bubble up and delete the selected node
+        e.stopPropagation()
     Fulma.Content.content
-        []
+        [ Fulma.Content.Option.Props [ OnKeyDown onKeyDown ]]
         ([ if model.selectedNode.IsSome
            then yield! selectedNodeView model.selectedNode.Value
            if model.selectedPort.IsSome
