@@ -9,6 +9,7 @@ open Fable.React
 open Fable.React.Props
 open Fable.SimpleHttp
 open Fulma
+open Fulma
 open Fulma.Extensions.Wikiki
 open Thoth.Json
 
@@ -151,7 +152,7 @@ let navbarView model dispatch =
             Navbar.Item.div [] [
                 Button.list [] [
                     menuItemColor "New Node" "fa fa-plus" Color.IsPrimary "Add a new node" false (fun _ ->
-                        dispatch (AddNode(Graph.GraphBuilder(model.graph).nextId(), "New")))
+                        dispatch (AddNode(GraphBuilder(model.graph).nextId(), "New")))
                     menuItemColor "" "fa fa-undo" Color.IsLight "Undo" false (fun _ ->
                                 Browser.Dom.history.back())
                     menuItemColor "" "fa fa-redo" Color.IsLight "Redo" false (fun _ ->
@@ -203,7 +204,7 @@ module Templates =
     let renderTemplate (x:TemplateBuilder):string * Model * TemplateBuilder =
         let gb = GraphBuilder()
         let name = x gb
-        name, gb.Build() |> newModel |> App.GraphLayout.layout, x
+        name, gb.Build() |> newModel |> GraphLayout.layout, x
     let inputTemplate (gb:GraphBuilder) =
         gb.AddNode("", (0,0), [], [ "input" ]) |> ignore
         "Input"
@@ -231,24 +232,16 @@ let templateView dispatch (name,template, _) =
     let onClick e =
         JS.console.log name
         dispatch (InstantiateTemplate name)
-    Fulma.Column.column [ Column.Width (Screen.All, Fulma.Column.IsNarrow); Fulma.Column.Props [OnClick onClick] ] [
-        Fulma.Card.card [GenericOption.CustomClass "template-card" ] [
-            Card.image [] [
-                Fulma.Image.image [Image.IsFullwidth  ] [
-                GraphRender.renderReadOnly name template
-                ]
-                
-            ]
-//            Card.header [] [
-//                Card.Header.title [] [str name]
-//            ]
-            Card.content [] [ str name
+    Control.div [Control.Option.CustomClass "template-card"; Control.Option.Props [ OnClick onClick ]] [
+        Fulma.Tag.list [Fulma.Tag.List.HasAddons] [
+            Fulma.Tag.tag [Tag.Option.Color Fulma.Color.IsPrimary] [               
+                        GraphRender.renderReadOnly name template
+                        ]
             ]
         ]
-    ]
 let templateGallery dispatch = [
         Fulma.Text.span [] [ str "Templates" ]
-        Fulma.Columns.columns [ Fulma.Columns.IsMobile; Fulma.Columns.Option.IsGrid; Fulma.Columns.Option.IsMultiline ] [
+        Field.div [ Field.Option.IsGrouped; Field.Option.IsGroupedMultiline  ] [
             yield! (Templates.templates |> List.map (templateView dispatch  ))
         ]
     ]

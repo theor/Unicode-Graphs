@@ -20,16 +20,26 @@
 }
 
 .template-card {
+  pre {
+    background-color: transparent;
+    color: white;
+  }
+  .tag {
+    cursor: pointer !important;
+    height: 100%;
+  }
   .graph-output {
-    pre {
-
-      padding: 0 20px;
-    }
-    width: 100%;
-    text-align: center;
+    //margin: 5px 0px;
   }
-  .card-content {
-    text-align: center;
-    padding: 0.75rem;
-  }
+  //  pre {
+  //
+  //    padding: 0 0px;
+  //  }
+  //  width: 100%;
+  //  text-align: center;
+  //}
+  //.card-content {
+  //  text-align: center;
+  //  padding: 0.75rem;
+  //}
 }
