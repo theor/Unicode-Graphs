@@ -97,7 +97,7 @@ let inline (<*) x y = lift2 (fun z _ -> z) x y
 let inline (>>.) m f = bindM state m (fun _ -> f)
 /// Left-to-right Kleisli composition
 let inline (>=>) f g = fun x -> f x >>= g
-/// Right-to-left Kleisli composition
+// Right-to-left Kleisli composition
 //let inline (<=<) x = flip (>=>) x
 
 //let foldM f s =

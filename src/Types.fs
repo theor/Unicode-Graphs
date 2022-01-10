@@ -59,7 +59,7 @@ let newModel (g: Graph) =
       selectedId = None
       highlightedId = None
       ports = Map.empty
-      /// Delta between node pos (top left corner) and actual mouse click (eg. the node center) used when moving a node
+      // Delta between node pos (top left corner) and actual mouse click (eg. the node center) used when moving a node
       deltaPos = None
       edgeCandidate = None
       isBurgerOpen = false

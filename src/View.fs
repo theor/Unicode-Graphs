@@ -253,8 +253,8 @@ let view (model: Model) dispatch =
             Container.container [] [
                 Columns.columns [] [
                     Column.column [] [
-                        yield (GraphRender.renderEditable "main" dispatch model)
                         yield! templateGallery dispatch
+                        yield (GraphRender.renderEditable "main" dispatch model)
                     ]
                     Column.column [] [
                         EditorView.view model dispatch
