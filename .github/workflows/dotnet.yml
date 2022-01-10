@@ -26,10 +26,10 @@ jobs:
       run: yarn
     - name: Build
       run: npm run build
+    - name: Install netlify
+      run: npm install -g netlify-cli
     - name: Deploy to netlify
-      uses: netlify/actions/cli@master
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-      with:
-        args: deploy --dir output --prod
+      run: netlify deploy --dir output --prod
