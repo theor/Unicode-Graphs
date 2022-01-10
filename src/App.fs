@@ -15,6 +15,8 @@ open Thoth.Json
 Fable.Core.JsInterop.importAll "bulma-tooltip"
 Fable.Core.JsInterop.importAll "@fortawesome/fontawesome-free/js/all"
 
+let minSize = 30,10
+
 type Route =
     | Home
     | Graph of string
@@ -40,15 +42,15 @@ let init (initRoute: Route option): Model * Cmd<Msg> =
         //    gb.AddNodeEdge(c,b) |> ignore
         //    gb.AddNodeEdge(c,d) |> ignore
         newModel (gb.Build())
-        |> layout
+        |> layout (fst minSize) (snd minSize)
         |> (fun m -> { m with selectedId = Some b }),
-        []
+        [] 
     | Route.Graph b64 -> newModel (emptyGraph ()), Cmd.ofMsg (LoadJson(b64, Format.B64))
 
 // UPDATE
 
 let cmdLayout m =
-    let m2 = layout m
+    let m2 = layout (fst minSize) (snd minSize) m
 
     let (debouncerModel, debouncerCmd) =
         m.Debouncer

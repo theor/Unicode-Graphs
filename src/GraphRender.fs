@@ -292,7 +292,7 @@ let render key editable dispatch (model: Model) =
     div
         [ yield Prop.Key key
           yield HTMLAttr.Id "graph-output"
-          yield ClassName "graph-output"
+          yield classList ["graph-output", true; "graph-output-render", editable]
           if editable then
               yield OnMouseMove(onMouseMove dispatch model MouseState.Move)
               yield OnMouseDown(onMouseMove dispatch model MouseState.Down)

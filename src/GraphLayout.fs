@@ -7,7 +7,7 @@ open Geometry
 
 let hasTitle n = not <| String.IsNullOrWhiteSpace n.title
 
-let layout (model: Model) =
+let layout minWidth minHeight (model: Model) =
     let mutable nodeSizes = Map.empty<Id, Rect>
 
     let measureNode guid n =
@@ -97,7 +97,7 @@ let layout (model: Model) =
     { model with
           options =
               { model.options with
-                    ActualCanvasWidth = w
-                    ActualCanvasHeight = h }
+                    ActualCanvasWidth = max w minWidth
+                    ActualCanvasHeight = max h minHeight }
           nodeSizes = nodeSizes
           ports = portData }

@@ -78,7 +78,7 @@ let graphText (mode: GraphTextMode) model =
         Browser
             .Dom
             .document
-            .querySelector("#graph-output")
+            .querySelector(".graph-output-render")
             .textContent
         |> Seq.chunkBySize model.options.ActualCanvasWidth
         |> Seq.map System.String
@@ -204,7 +204,7 @@ module Templates =
     let renderTemplate (x:TemplateBuilder):string * Model * TemplateBuilder =
         let gb = GraphBuilder()
         let name = x gb
-        name, gb.Build() |> newModel |> GraphLayout.layout, x
+        name, gb.Build() |> newModel |> GraphLayout.layout -1 -1, x
     let inputTemplate (gb:GraphBuilder) =
         gb.AddNode("", (0,0), [], [ "input" ]) |> ignore
         "Input"
