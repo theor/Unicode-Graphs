@@ -1,6 +1,6 @@
 # Unicode graphs
 
-[Live here: code-graphs.netlify.app](code-graphs.netlify.app)
+[Live here: unicode-graphs.netlify.app](https://unicode-graphs.netlify.app/)
 
 A static website to edit graphs as unicode characters. Graphs can be shared via the url at any time.
 
