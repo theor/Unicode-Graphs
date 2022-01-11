@@ -12,6 +12,7 @@ open App.Types
 
 let emptyChar = ' '
 let portChar = "\u25CC"
+let portChar2 = "\u25CF"
 
 [<RequireQualifiedAccess>]
 type MouseState =
@@ -25,8 +26,7 @@ let getId (e: MouseEvent): Id option =
     //    JS.console.log("Under cursor:", elem, e)
     if not <| JsInterop.isNullOrUndefined elem then
         match elem.dataset.Item "nid" with
-        | ""
-        | null -> None
+        | "" -> None
         | s when JsInterop.isNullOrUndefined s -> None
         | s -> UInt32.Parse s |> Id |> Some
     else
@@ -88,8 +88,8 @@ let onMouseMove (dispatch: Msg -> unit) (model: Model) (state: MouseState) (e: M
             | Some targetPort ->
                 dispatch
                     (if targetPort.direction = Direction.Output
-                     then CreateEdge(targetPort.port.guid, from.guid)
-                     else CreateEdge(from.guid, targetPort.port.guid))
+                     then CreateEdge(targetPort.port.id, from.id)
+                     else CreateEdge(from.id, targetPort.port.id))
             | _ -> dispatch <| SelectNode(pickedId, None)
         | _ -> dispatch <| SelectNode(pickedId, None)
     | MouseState.Move when model.deltaPos.IsNone ->
@@ -102,14 +102,14 @@ let onMouseMove (dispatch: Msg -> unit) (model: Model) (state: MouseState) (e: M
         match model with
         | SelectedNode n ->
             let sx, sy = model.deltaPos.Value
-            dispatch <| Move(n.guid, (sx + x, sy + y))
+            dispatch <| Move(n.id, (sx + x, sy + y))
         | SelectedPort _ -> dispatch <| EdgeCandidate((x, y), pickedId)
         | _ -> ()
     //         JS.console.log(e.clientX - graphElt.clientLeft, e.clientY - graphElt.clientTop, graphElt.clientWidth, graphElt.clientHeight)
 //        model.selectedNode |> Option.iter (fun n ->
 //            let sx,sy = model.deltaPos.Value;
 //            let x,y = getCurrentCoords()
-//            dispatch <| Move(n.guid, (sx+x,sy+y)))
+//            dispatch <| Move(n.id, (sx+x,sy+y)))
 
     | _ -> failwith "todo"
 
@@ -129,18 +129,18 @@ let render key editable dispatch (model: Model) =
         if x + y * options.ActualCanvasWidth < b.Length
         then b.[x + y * options.ActualCanvasWidth] <- (c, id)
 
-    let renderLabel x y (s: string) (id: Id) =
+    let renderLabel x y (label: string) (id: Id) =
         if not model.options.ShowIds then
-            for i in 0 .. s.Length - 1 do
-                set (x + i) (y) s.[i] id
+            for i in 0 .. label.Length - 1 do
+                set (x + i) (y) label.[i] id
         else
             let sid = id.ToString()
 
             for i in 0 .. sid.Length - 1 do
                 set (x + i) (y) sid.[i] id
 
-    let renderNode guid n =
-        let r = Map.find guid model.nodeSizes
+    let renderNode id n =
+        let r = Map.find id model.nodeSizes
 
         for j in 0 .. r.H - 1 do
             for i in 0 .. r.W - 1 do
@@ -160,7 +160,7 @@ let render key editable dispatch (model: Model) =
                     (if i = 0 || i = (r.W - 1) || j = (r.H - 1) || j = 0
                      then c
                      else ' ')
-                    guid
+                    id
 
         let titleHeight = if GraphLayout.hasTitle n then 1 else 0
 
@@ -169,10 +169,10 @@ let render key editable dispatch (model: Model) =
                 (r.X + r.W / 2 - n.title.Length / 2)
                 (r.Y + ifBorderThenOne)
                 n.title
-                guid
+                id
         n.inputs
         |> List.iteri (fun i p ->
-            renderLabel (r.X + 1) (r.Y + titleHeight + i + ifBorderThenOne) (portChar + p.title) p.guid)
+            renderLabel (r.X + 1) (r.Y + titleHeight + i + ifBorderThenOne) (portChar + p.title) p.id)
 
         n.outputs
         |> List.iteri (fun i p ->
@@ -180,7 +180,7 @@ let render key editable dispatch (model: Model) =
                 (r.X + r.W - 2 * ifBorderThenOne - p.title.Length)
                 (r.Y + titleHeight + i + ifBorderThenOne)
                 (p.title + portChar)
-                p.guid)
+                p.id)
 
         ()
 
@@ -238,8 +238,8 @@ let render key editable dispatch (model: Model) =
         let port = portList |> List.tryItem (int portIndex)
 
         port
-        |> Option.map (fun x -> x.guid)
-        |> Option.bind (fun guid -> Map.tryFind guid model.ports)
+        |> Option.map (fun x -> x.id)
+        |> Option.bind (fun id -> Map.tryFind id model.ports)
         |> Option.map (fun e -> e.position)
         |> Option.defaultWith (fun () ->
             JS.console.error (sprintf "Cannot find %A port %A of node %A" dir portIndex nodeId)
@@ -285,7 +285,7 @@ let render key editable dispatch (model: Model) =
             let { direction = direction
                   ownerNode = node
                   index = index } =
-                Map.find model.selectedPort.Value.guid model.ports
+                Map.find model.selectedPort.Value.id model.ports
 
             renderEdgeCandidate node index direction x y)
 

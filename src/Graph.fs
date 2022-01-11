@@ -14,12 +14,12 @@ type Id =
     override this.ToString() = sprintf "#%u" this.Value
 
 [<Struct>]
-type Port = { title: string; guid: Id }
+type Port = { title: string; id: Id }
 
 [<Struct>]
 type Node =
     { title: string
-      guid: Id
+      id: Id
       pos: Pos
       inputs: Port List
       outputs: Port List }
@@ -29,7 +29,6 @@ type Edge =
     { id: Id
       fromNode: Id * uint8
       toNode: Id * uint8
-      isNodeEdge: bool
       offset: int8 }
 
 type Graph =
@@ -62,7 +61,7 @@ let getMaxId (g: Graph): uint =
             [ yield i.Value
               yield!
                   (Seq.concat [ n.inputs; n.outputs ]
-                   |> Seq.map (fun p -> p.guid.Value)) ])
+                   |> Seq.map (fun p -> p.id.Value)) ])
         |> maxOrDefault 0u
 
     max maxEdge maxNode
@@ -78,47 +77,29 @@ type GraphBuilder(g0: Graph) =
     new() = GraphBuilder(emptyGraph ())
 
     member this.newPort(title: string): Port =
-        let guid = this.nextId () in
-        { guid = guid; title = title }
+        let id = this.nextId () in
+        { id = id; title = title }
 
     member this.newNode(): Node =
-        let guid = this.nextId () in
+        let id = this.nextId () in
 
-        { guid = guid
-          title = guid.ToString()
+        { id = id
+          title = id.ToString()
           pos = 0, 0
           inputs = []
           outputs = [] }
 
-    member this.AddNodeEdge(fromNode: Id, toNode: Id, ?id: Id) =
-        let guid = Option.defaultWith this.nextId id in
-
-        g <-
-            { g with
-                  edges =
-                      Map.add
-                          guid
-                          { id = guid
-                            fromNode = (fromNode, Byte.MaxValue)
-                            toNode = (toNode, Byte.MaxValue)
-                            isNodeEdge = true
-                            offset = 0y }
-                          g.edges }
-
-        this
-
     member this.AddEdge(fromNode: Id, fromIndex: uint8, toNode: Id, toIndex: uint8, ?id: Id) =
-        let guid = Option.defaultWith this.nextId id in
+        let id = Option.defaultWith this.nextId id in
 
         g <-
             { g with
                   edges =
                       Map.add
-                          guid
-                          { id = guid
+                          id
+                          { id = id
                             fromNode = (fromNode, fromIndex)
                             toNode = (toNode, toIndex)
-                            isNodeEdge = false
                             offset = 0y }
                           g.edges }
 
@@ -133,41 +114,41 @@ type GraphBuilder(g0: Graph) =
         this
 
     member this.DuplicateNode(node: Node, ?id: Id) =
-        let guid = Option.defaultWith this.nextId id in
-        let duplicatePort (p: Port) = { p with guid = this.nextId () }
+        let id = Option.defaultWith this.nextId id in
+        let duplicatePort (p: Port) = { p with id = this.nextId () }
 
         let duplicate =
             { node with
-                  guid = guid
+                  id = id
                   inputs = node.inputs |> List.map duplicatePort
                   outputs = node.outputs |> List.map duplicatePort }
 
         g <-
             { g with
-                  nodes = Map.add guid duplicate g.nodes }
+                  nodes = Map.add id duplicate g.nodes }
 
         this
 
     member this.AddNode(?title: string, ?pos: Pos, ?inputs: string List, ?outputs: string List, ?id: Id) =
-        let guid = Option.defaultWith this.nextId id in
+        let id = Option.defaultWith this.nextId id in
 
         let n =
-            { guid = guid
-              title = defaultArg title (guid.ToString())
+            { id = id
+              title = defaultArg title (id.ToString())
               pos = defaultArg pos (0, 0)
               inputs = defaultArg inputs [] |> List.map this.newPort
               outputs = defaultArg outputs [] |> List.map this.newPort }
 
         g <-
             { g with
-                  nodes = Map.add n.guid n g.nodes }
+                  nodes = Map.add n.id n g.nodes }
 
-        n.guid
+        n.id
 
     member this.UpdateNode(node: Node): GraphBuilder =
         g <-
             { g with
-                  nodes = Map.change node.guid (fun _ -> Some node) g.nodes }
+                  nodes = Map.change node.id (fun _ -> Some node) g.nodes }
 
         this
 

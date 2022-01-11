@@ -3,3 +3,5 @@
 *.fs.js
 *.fs.js.map
 output/
+# Local Netlify folder
+.netlify

@@ -27,7 +27,7 @@ type SerializationModel =
         let g: Graph =
             { nodes =
                   m.nodes
-                  |> Seq.map (fun n -> (n.guid, n))
+                  |> Seq.map (fun n -> (n.id, n))
                   |> Map.ofSeq
               edges =
                   m.edges
@@ -126,7 +126,7 @@ let readId: State<Id, SerializationState> = Id.Id <!> readUInt
 
 let writePort (x: Port): State<unit, SerializationState> =
     state {
-        do! writeId x.guid
+        do! writeId x.id
         do! writeString x.title
     }
 
@@ -134,12 +134,12 @@ let readPort: State<Port, SerializationState> =
     state {
         let! id = readId
         let! title = readString
-        return { guid = id; title = title }
+        return { id = id; title = title }
     }
 
 let writeNode (x: Node): State<unit, SerializationState> =
     state {
-        do! writeId x.guid
+        do! writeId x.id
         do! writeString x.title
 
         let px, py = x.pos
@@ -159,7 +159,7 @@ let readNode: State<Node, SerializationState> =
         let! outputs = readSeq readPort
 
         return
-            { guid = id
+            { id = id
               title = title //id.ToString()// title
               pos = px, py
               inputs = inputs |> Seq.toList
@@ -170,7 +170,6 @@ let writeEdge (x: Edge): State<unit, SerializationState> =
     state {
         do! writeId x.id
         do! writeInt8 x.offset
-        do! writeBool x.isNodeEdge
 
         let fid, fidx = x.fromNode
         let tid, tidx = x.toNode
@@ -182,9 +181,13 @@ let writeEdge (x: Edge): State<unit, SerializationState> =
 
 let readEdge: State<Edge, SerializationState> =
     state {
+        
+        let! state = getState
         let! id = readId
         let! offset = readInt8
-        let! isNodeEdge = readBool
+        if state.version <= 2uy then
+            let! _isNodeEdge = readBool
+            ()
         let! fid = readId
         let! fidx = readUInt8
         let! tid = readId
@@ -193,7 +196,6 @@ let readEdge: State<Edge, SerializationState> =
         return
             { id = id
               offset = offset
-              isNodeEdge = isNodeEdge
               fromNode = fid, fidx
               toNode = tid, tidx }
     }
@@ -208,7 +210,7 @@ let writeState buffer w =
     let x, _ = w s
     x
 
-let lastVersion = 2uy
+let lastVersion = 3uy
 let serialize (m: SerializationModel) =
     state {
         // todo : the now removed NodeBorders options writes a byte that is either 0 or 1. use it as a version number
@@ -265,6 +267,7 @@ let toBase64 (m: Model) =
     then failwithf "non matched lengths: %i %i" len r
 
     let res2 = base64Arraybuffer.encode (b2.buffer)
+    // let res2 = base64Arraybuffer.encode (b)
     res2
 
 let fromBase64 (s: string): Result<Model, string> =

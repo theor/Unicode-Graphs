@@ -96,7 +96,7 @@ let update (msg: Msg) (model: Model): Model * Cmd<Msg> =
         { model with
               graph = GraphBuilder(model.graph).UpdateNode(n).Build() }
         |> cmdLayout
-    //        |> (fun m -> if m.selectedId() = Some(n.guid) then {m with selectedNode})
+    //        |> (fun m -> if m.selectedId() = Some(n.id) then {m with selectedNode})
     | EdgeCandidate (pos, highlightedId) ->
         { model with
               edgeCandidate = Some pos
@@ -144,7 +144,7 @@ let update (msg: Msg) (model: Model): Model * Cmd<Msg> =
             { model with
                   graph =
                       GraphBuilder(model.graph)
-                          .RemoveNode(n.guid)
+                          .RemoveNode(n.id)
                           .Build() }
             |> cmdLayout
         | SelectedEdge e ->

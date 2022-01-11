@@ -38,7 +38,7 @@ let view (model: Model) dispatch =
         List.mapi (fun i elt -> if i <> idx then elt else x) l
 
     let selectedPortView (n: Port) =
-        [ str <| sprintf "Port %A: %s" n.guid n.title ]
+        [ str <| sprintf "Port %A: %s" n.id n.title ]
 
     let selectedEdgeView (n: Edge) =
         [ yield

@@ -10,7 +10,7 @@ let hasTitle n = not <| String.IsNullOrWhiteSpace n.title
 let layout minWidth minHeight (model: Model) =
     let mutable nodeSizes = Map.empty<Id, Rect>
 
-    let measureNode guid n =
+    let measureNode id n =
         let titleHeight = if hasTitle n then 1 else 0
 
         let portWidth =
@@ -40,7 +40,7 @@ let layout minWidth minHeight (model: Model) =
 
         let nw = Math.Max(nw, portWidth)
         let x, y = n.pos
-        nodeSizes <- Map.add guid (Rect.Create(x, y, nw, nh)) nodeSizes
+        nodeSizes <- Map.add id (Rect.Create(x, y, nw, nh)) nodeSizes
 
     model.graph.nodes |> Map.iter measureNode
 
@@ -60,7 +60,7 @@ let layout minWidth minHeight (model: Model) =
 
     let makePortEntry (node: Node) (index: int) (p: Port) (dir: Direction) =
         let pos =
-            let r = Map.find node.guid nodeSizes
+            let r = Map.find node.id nodeSizes
 
             let y =
                 r.Y
@@ -74,7 +74,7 @@ let layout minWidth minHeight (model: Model) =
             x, y
 
         { port = p
-          ownerNode = node.guid
+          ownerNode = node.id
           index = uint8 index
           position = pos
           direction = dir }
@@ -90,7 +90,7 @@ let layout minWidth minHeight (model: Model) =
                           |> Seq.map (fun p -> p, Direction.Output) ]))
         |> Seq.collect (fun (n, ports) ->
             ports
-            |> Seq.map (fun ((i, p), dir) -> p.guid, makePortEntry n i p dir))
+            |> Seq.map (fun ((i, p), dir) -> p.id, makePortEntry n i p dir))
         |> Map.ofSeq
 
     //    JS.console.log(nodeSizes |> Map.toSeq |> Seq.map (fun (_,x) -> x) |> Seq.toArray, nodeSizes |> Map.toArray |> Array.map (fun (a,b) -> b.Center))
