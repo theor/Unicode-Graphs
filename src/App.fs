@@ -222,6 +222,7 @@ let urlUpdate (result: Route option) model =
     | Some (Route.Graph b64) -> newModel (emptyGraph ()), Cmd.ofMsg (LoadJson(b64, Format.B64))
     | Some Home -> (newModel (emptyGraph ()), Cmd.none)
     | None -> (model, Cmd.none)
+Fable.Core.JS.console.log("asdasd");
 
 Program.mkProgram init update view
 |> Program.withSubscription (fun _ ->
@@ -235,11 +236,11 @@ Program.mkProgram init update view
 
         Browser.Dom.window.onmouseup <- (fun _ -> dispatch EndDragAndDrop)))
 |> Program.toNavigable (parseHash route) urlUpdate
-|> Toast.Program.withToast Toast.render
+// |> Toast.Program.withToast Toast.render
 //|> Program.withReactSynchronous "elmish-app"
 |> Program.withReactBatched "elmish-app"
 #if DEBUG
 //|> Program.withConsoleTrace
-|> Program.withDebugger
+// |> Program.withDebugger
 #endif
 |> Program.run

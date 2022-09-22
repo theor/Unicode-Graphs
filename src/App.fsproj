@@ -21,17 +21,18 @@
     <Content Include="scss\main.scss" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Fable.Browser.Dom" Version="2.2.0" />
-    <PackageReference Include="Fable.Browser.Navigator" Version="1.1.0" />
-    <PackageReference Include="Fable.Core" Version="3.2.3" />
+    <PackageReference Include="Fable.Browser.Dom" Version="2.10.0" />
+    <PackageReference Include="Fable.Browser.Navigator" Version="2.3.0" />
+    <PackageReference Include="Fable.Core" Version="3.7.1" />
     <PackageReference Include="Fable.Elmish" Version="3.1.0" />
-    <PackageReference Include="Fable.Elmish.Browser" Version="3.0.4" />
-    <PackageReference Include="Fable.Elmish.Debugger" Version="3.2.0" />
+    <PackageReference Include="Fable.Elmish.Browser" Version="3.0.5" />
+    <PackageReference Include="Fable.Elmish.Debugger" Version="3.3.0" />
     <PackageReference Include="Fable.Elmish.React" Version="3.0.1" />
-    <PackageReference Include="Fable.SimpleHttp" Version="3.0.0" />
-    <PackageReference Include="Fulma" Version="2.10.0" />
+    <PackageReference Include="Fable.SimpleHttp" Version="3.5.0" />
+    <PackageReference Include="Fulma" Version="2.16.0" />
     <PackageReference Include="Fulma.Extensions.Wikiki.Tooltip" Version="3.0.0" />
     <PackageReference Include="Thoth.Elmish.Debouncer" Version="1.0.0" />
-    <PackageReference Include="Thoth.Elmish.Toast" Version="2.1.0" />
+    <PackageReference Include="Thoth.Elmish.Toast" Version="3.0.0" />
+    <PackageReference Update="FSharp.Core" Version="6.0.6" />
   </ItemGroup>
 </Project>
