@@ -6,7 +6,7 @@ export default defineConfig({
     port: 5174
   },
   build: {
-    outDir: "../public",
+    outDir: "../output",
     emptyOutDir: true,
     sourcemap: true
   }
