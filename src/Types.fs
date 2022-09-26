@@ -90,8 +90,11 @@ type Msg =
     | EdgeCandidate of Pos * Id option
     | Highlight of Id option
     | CreateEdge of Id * Id
+    | CreateAndConnectNode of Id * Pos
     | Delete
     | Duplicate
+    | AddInput
+    | AddOutput
     | UndoRedo of bool
     | Layout
     | EndDragAndDrop

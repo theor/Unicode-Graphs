@@ -46,7 +46,7 @@ let view (model: Model) dispatch =
                 "Edge Offset"
                 (input [ Class "input"
                          Type "number"
-                         Value n.offset
+                         DefaultValue n.offset
                          OnChange(dispatchEdgeChange (fun e -> { n with offset = e.Value |> int8 })) ]) ]
 
     let selectedNodeView (n: Graph.Node) =
@@ -61,7 +61,7 @@ let view (model: Model) dispatch =
                 //                    str"test"
                 input [ Class "input"
                         Type "text"
-                        Value p.title
+                        DefaultValue p.title
                         OnChange
                             (dispatchNodeChange (fun e ->
                                 if dir = Direction.Input then
@@ -119,7 +119,7 @@ let view (model: Model) dispatch =
                   "Node Title"
                   (input [ Class "input"
                            Type "text"
-                           Value n.title
+                           DefaultValue n.title
                            OnChange(dispatchNodeChange (fun e -> { n with title = e.Value })) ])
 
           yield
@@ -165,5 +165,7 @@ let view (model: Model) dispatch =
 //               controlCheckbox "Show Node Borders" model.options.NodeBorders (fun b ->
 //                   { model.options with NodeBorders = b })
 //           yield controlCheckbox "Show Ports" model.options.ShowPorts (fun b -> { model.options with ShowPorts = b })
+        //    yield button [ Class "button is-danger"
+                        //   OnClick (fun e -> dispatch <| ChangeOptions { model.options with CanvasWidth = Some <| 1 + (Option.defaultValue 0 model.options.CanvasWidth)}) ] [ str "++" ] 
            yield controlCheckbox "Show Debug Ids" model.options.ShowIds (fun b -> { model.options with ShowIds = b })
         ])

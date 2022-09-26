@@ -126,6 +126,22 @@ let update (msg: Msg) (model: Model): Model * Cmd<Msg> =
               edgeCandidate = None
               deltaPos = None }
         |> cmdLayout
+    | CreateAndConnectNode(portId, pos) ->
+        let { ownerNode = fromNode
+              index = fromIndex
+              direction = fromDir } =
+            (Map.find portId model.ports)
+        let b = GraphBuilder(model.graph) 
+        let newNode = b.AddNode("", pos, (if fromDir = Direction.Input then [] else ["O"]), if fromDir = Direction.Input then ["I"] else [])
+        let newGraph = (if fromDir <> Direction.Input then b.AddEdge(fromNode, fromIndex, newNode, 0uy) else b.AddEdge(newNode, 0uy, fromNode, fromIndex))
+                        .Build()
+
+        { model with
+              graph = newGraph
+              selectedId = Some newNode
+              edgeCandidate = None
+              deltaPos = None }
+        |> cmdLayout
     | Duplicate ->
         match model with
         | SelectedNode n ->
@@ -138,6 +154,15 @@ let update (msg: Msg) (model: Model): Model * Cmd<Msg> =
                           .Build() }
             |> cmdLayout
         | _ -> model, Cmd.none
+    | AddInput ->
+        match model with
+        | SelectedNode n -> {model with graph = GraphBuilder(model.graph).UpdateNode({n with inputs = n.inputs @ [GraphBuilder(model.graph).newPort "new"]}).Build()} |> cmdLayout
+        | _ -> model, Cmd.none
+    | AddOutput ->
+        match model with
+        | SelectedNode n -> {model with graph = GraphBuilder(model.graph).UpdateNode({n with outputs = n.outputs @ [GraphBuilder(model.graph).newPort "new"]}).Build()} |> cmdLayout
+        | _ -> model, Cmd.none
+    | AddOutput -> model, Cmd.none
     | Delete ->
         match model with
         | SelectedNode n ->
@@ -222,7 +247,6 @@ let urlUpdate (result: Route option) model =
     | Some (Route.Graph b64) -> newModel (emptyGraph ()), Cmd.ofMsg (LoadJson(b64, Format.B64))
     | Some Home -> (newModel (emptyGraph ()), Cmd.none)
     | None -> (model, Cmd.none)
-Fable.Core.JS.console.log("asdasd");
 
 Program.mkProgram init update view
 |> Program.withSubscription (fun _ ->

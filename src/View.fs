@@ -82,6 +82,7 @@ let graphText (mode: GraphTextMode) model =
             .textContent
         |> Seq.chunkBySize model.options.ActualCanvasWidth
         |> Seq.map System.String
+        |> Seq.filter (fun l -> not <| System.String.IsNullOrWhiteSpace(l))
 
     let url = Browser.Dom.window.location.href
 
@@ -262,7 +263,7 @@ let view (model: Model) dispatch =
                             Message.header [] [ str "How to use" ]
                             Message.body [] [
                                 Fulma.Content.content [] [
-                                    Fulma.Text.div [] [
+                                    Fulma.Content.content [] [
                                         str
                                             "Nodes can be moved on the canvas, which will grow if needed to accomodate all nodes. Use the "
                                         code [] [ str "New Node" ]
@@ -272,13 +273,22 @@ let view (model: Model) dispatch =
                                         code [] [ str "Backspace" ]
                                         str " key to delete a node or an edge"
                                     ]
-                                    Fulma.Text.div [] [
+                                    Fulma.Content.content [] [
+                                        str "Drag from a port to an empty space to create and connect a node to that port"
+                                    ]
+                                    Fulma.Content.content [] [
                                         str
                                             "Selecting a node allows to change its title and add or remove ports. An empty title will hide the node's title line."
                                     ]
-                                    Fulma.Text.div [] [
+                                    Fulma.Content.content [] [
                                         code [] [ str "Ctrl+D" ]
                                         str " to duplicate a node"
+                                    ]
+                                    Fulma.Content.content [] [
+                                        code [] [ str "i" ]
+                                        str " or "
+                                        code [] [ str "o" ]
+                                        str " to add an input/output to the selected node"
                                     ]
                                 ]
                                 Fulma.Content.content [] [

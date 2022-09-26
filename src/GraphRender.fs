@@ -12,7 +12,7 @@ open App.Types
 
 let emptyChar = ' '
 let portChar = "\u25CC"
-let portChar2 = "\u25CF"
+let portChar2 = '\u25CF'
 
 [<RequireQualifiedAccess>]
 type MouseState =
@@ -20,6 +20,40 @@ type MouseState =
     | Down
     | Move
     | Up
+
+
+[<RequireQualifiedAccess>]
+type Corner = Tl | Tr | Bl | Br
+[<RequireQualifiedAccess>]
+type Line = H | V
+[<RequireQualifiedAccess>]
+type RenderMode = Square | Rounded
+[<RequireQualifiedAccess>]
+type LineRenderMode = Solid | Dash
+
+
+let CornerChar (c:Corner) (r:RenderMode) =
+    if r = RenderMode.Square then
+        match c with
+        | Corner.Tl -> '\u250c'
+        | Corner.Tr -> '\u2510'
+        | Corner.Bl -> '\u2514' 
+        | Corner.Br -> '\u2518'
+    else
+        match c with
+        | Corner.Tl -> '\u256d'
+        | Corner.Tr -> '\u256e'
+        | Corner.Bl -> '\u2570' 
+        | Corner.Br -> '\u256f'
+let LineChar (c:Line) (r:LineRenderMode) =
+    if r = LineRenderMode.Solid then
+        match c with
+        | Line.H -> '\u2500'
+        | Line.V -> '\u2502'
+    else
+        match c with
+        | Line.H -> '\u2504'
+        | Line.V -> '\u2506'
 
 let getId (e: MouseEvent): Id option =
     let elem = e.target :?> HTMLElement
@@ -42,6 +76,8 @@ let keyToMessage (e: KeyboardEvent): Msg option =
     | "z", true -> Some (UndoRedo true)
     | "y", true -> Some (UndoRedo false)
     | "d", true -> Some Duplicate
+    | "i", false -> Some AddInput
+    | "o", false -> Some AddOutput
     | "Delete", _ | "Backspace",_ -> Some Delete
     | _ -> None
 
@@ -65,7 +101,7 @@ let onMouseMove (dispatch: Msg -> unit) (model: Model) (state: MouseState) (e: M
     | MouseState.Down ->
         let pickedId = getId e
 
-        let newSelectedId, newPos =
+        let newSelectedId, (newPos: (int32 * int32) option) =
             match pickedId
                   |> Option.bind (model.graph.nodes.TryFind) with
             | None ->
@@ -81,16 +117,19 @@ let onMouseMove (dispatch: Msg -> unit) (model: Model) (state: MouseState) (e: M
         dispatch (SelectNode(newSelectedId, newPos))
     | MouseState.Up ->
         let pickedId = getId e
-        //        JS.console.log("PICKED", pickedId)
+        JS.console.log("PICKED", pickedId)
         match model.selectedPort, model.edgeCandidate with
-        | Some from, Some _pos ->
+        | Some from, Some pos ->
             match pickedId |> Option.bind (model.ports.TryFind) with
             | Some targetPort ->
                 dispatch
                     (if targetPort.direction = Direction.Output
                      then CreateEdge(targetPort.port.id, from.id)
                      else CreateEdge(from.id, targetPort.port.id))
-            | _ -> dispatch <| SelectNode(pickedId, None)
+            | _ ->
+                match pickedId with
+                | Some(i) when i <> Id.Default -> dispatch <| SelectNode(pickedId, None)
+                | _ ->dispatch <| CreateAndConnectNode(from.id, pos)
         | _ -> dispatch <| SelectNode(pickedId, None)
     | MouseState.Move when model.deltaPos.IsNone ->
         let pickedId = getId e
@@ -141,17 +180,19 @@ let render key editable dispatch (model: Model) =
 
     let renderNode id n =
         let r = Map.find id model.nodeSizes
+        let renderCorner (c:Corner) = CornerChar c RenderMode.Rounded
+        let renderLine (l:Line) = LineChar l LineRenderMode.Solid
 
         for j in 0 .. r.H - 1 do
             for i in 0 .. r.W - 1 do
                 let c =
                     match (i, j) with
-                    | 0, 0 -> '\u250c' // top left
-                    | (0, _) when j = r.H - 1 -> '\u2514' // bottom left
-                    | _, 0 when i = r.W - 1 -> '\u2510' // top right
-                    | _, _ when i = r.W - 1 && j = r.H - 1 -> '\u2518' // bottom right
-                    | _, _ when j = 0 || j = r.H - 1 -> '\u2500' // top or bottom
-                    | _, _ when i = 0 || i = r.W - 1 -> '\u2502' // left or right
+                    | 0, 0 -> renderCorner Corner.Tl
+                    | (0, _) when j = r.H - 1 -> renderCorner Corner.Bl
+                    | _, 0 when i = r.W - 1 -> renderCorner Corner.Tr
+                    | _, _ when i = r.W - 1 && j = r.H - 1 -> renderCorner Corner.Br
+                    | _, _ when j = 0 || j = r.H - 1 -> renderLine Line.H // top or bottom
+                    | _, _ when i = 0 || i = r.W - 1 -> renderLine Line.V // left or right
                     | _ -> '.'
 
                 set
@@ -183,50 +224,59 @@ let render key editable dispatch (model: Model) =
                 p.id)
 
         ()
+        
+    
 
     let renderEdgeFromTo id rfx rfy rtx rty (offset: int8) =
         let mutable (i, j) = rfx, rfy
         let edgeCenterX = (i + rtx) / 2 + (int offset)
         let dirX, dirY = sign (rtx - i), sign (rty - j)
         let needHorizontalMove = i <> edgeCenterX
+        let renderCorner (c:Corner) = CornerChar c RenderMode.Rounded
+        let renderLine (l:Line) = LineChar l LineRenderMode.Solid
 
         // horiz bar until before the corner
         if needHorizontalMove then
             while i <> edgeCenterX - dirX do
-                set i j '\u2500' id
+                set i j (renderLine Line.H) id
                 i <- i + dirX
 
         // 1st corner
         match dirY with
         | 1 ->
-            set i j '\u2510' id
+            set i j (renderCorner Corner.Tr) id
             j <- j + dirY
         | -1 ->
-            set i j '\u2518' id
+            set i j (renderCorner Corner.Br) id // br
             j <- j + dirY
-        | _ -> set i j '\u2500' id
+        | _ -> set i j (renderLine Line.H) id
 
         // vertical bar until 2nd corner
         while j <> rty do
-            set i j '\u2502' id
+            set i j (renderLine Line.V) id
             j <- j + dirY
 
         // 2nd corner
         match dirY with
         | 1 ->
-            set i j '\u2514' id
+            set i j (renderCorner Corner.Bl) id // bl
             i <- i + dirX
         | -1 ->
-            set i j '\u250c' id
+            set i j (renderCorner Corner.Tl) id // tl
             i <- i + dirX
-        | _ -> set i j '\u2500' id
+        | _ -> set i j (renderLine Line.H) id
 
         // from 2nd corner to other port
 
         if needHorizontalMove then
             while i <> rtx do
-                set i j '\u2500' id
+                set i j (renderLine Line.H) id
                 i <- i + dirX
+        // draw filled circles for ports on top of existing chars
+        set (rfx-2) rfy portChar2 id
+        set (rfx-1) rfy '\u253c' id
+        set (rtx+1) rty portChar2 id
+        set rtx rty '\u253c' id
 
     let getPortPosition (nodeId: Id) (portIndex: uint8) (dir: Direction): Pos =
         //        JS.console.log(sprintf "Get port position %A %A %A" nodeId portIndex dir)

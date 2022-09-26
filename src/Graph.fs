@@ -3,6 +3,7 @@ module App.Graph
 open System
 open App.Geometry
 
+[<Struct;StructuralEquality;StructuralComparison>]
 type Id =
     | Id of uint
     static member Default = Id 0u

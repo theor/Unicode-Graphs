@@ -3,7 +3,8 @@
   "scripts": {
     "start": "dotnet fable watch src --sourceMaps --run vite",
     "build": "dotnet fable src --sourceMaps --run vite build",
-    "serve": "vite serve"
+    "serve": "vite serve",
+    "postinstall": "patch-package"
   },
   "devDependencies": {
     "remotedev": "^0.2.9",
@@ -17,6 +18,8 @@
     "bulma": "0.9.0",
     "bulma-tooltip": "^3.0.0",
     "lz4js": "^0.2.0",
+    "patch-package": "^6.4.7",
+    "postinstall-postinstall": "^2.1.0",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "sass": "^1.55.0"
