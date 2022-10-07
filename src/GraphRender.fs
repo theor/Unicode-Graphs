@@ -227,7 +227,7 @@ let render key editable dispatch (model: Model) =
         
     
 
-    let renderEdgeFromTo id rfx rfy rtx rty (offset: int8) =
+    let renderEdgeFromTo id rfx rfy rtx rty (offset: int8) (renderNodeBorder:bool) =
         let mutable (i, j) = rfx, rfy
         let edgeCenterX = (i + rtx) / 2 + (int offset)
         let dirX, dirY = sign (rtx - i), sign (rty - j)
@@ -273,10 +273,11 @@ let render key editable dispatch (model: Model) =
                 set i j (renderLine Line.H) id
                 i <- i + dirX
         // draw filled circles for ports on top of existing chars
-        set (rfx-2) rfy portChar2 id
-        set (rfx-1) rfy '\u253c' id
-        set (rtx+1) rty portChar2 id
-        set rtx rty '\u253c' id
+        if renderNodeBorder then
+            set (rfx-2) rfy portChar2 id
+            set (rfx-1) rfy '\u253c' id
+            set (rtx+1) rty portChar2 id
+            set rtx rty '\u253c' id
 
     let getPortPosition (nodeId: Id) (portIndex: uint8) (dir: Direction): Pos =
         //        JS.console.log(sprintf "Get port position %A %A %A" nodeId portIndex dir)
@@ -312,7 +313,7 @@ let render key editable dispatch (model: Model) =
                 else getPortPosition toNodeId toIndex Direction.Input
 
 
-            renderEdgeFromTo id rfx rfy rtx rty e.offset)
+            renderEdgeFromTo id rfx rfy rtx rty e.offset true)
 
     let renderEdgeCandidate (fromNode: Id) (fromIndex: uint8) (fromDir: Direction) toX toY =
         let rf = model.nodeSizes.Item fromNode
@@ -337,7 +338,7 @@ let render key editable dispatch (model: Model) =
                   index = index } =
                 Map.find model.selectedPort.Value.id model.ports
 
-            renderEdgeCandidate node index direction x y)
+            renderEdgeCandidate node index direction x y false)
 
     div
         [ yield Prop.Key key
