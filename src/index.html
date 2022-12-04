@@ -7,8 +7,56 @@
     <link rel="shortcut icon" type="image/png" href="img/favicon-32x32.png" sizes="32x32" />
     <link rel="shortcut icon" type="image/png" href="img/favicon-16x16.png" sizes="16x16" />
     <script src="https://cdn.polyfill.io/v2/polyfill.js?features=es6"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="scss/main.scss">
+    <script src='./svg-pan-zoom.min.js'></script>
     <script type="application/javascript">
+        // beforePan = function(oldPan, newPan){
+        //     var stopHorizontal = false
+        //         , stopVertical = false
+        //         , gutterWidth = 1
+        //         , gutterHeight = 1
+        //         // Computed variables
+        //         , sizes = this.getSizes()
+        //         , leftLimit = -((sizes.viewBox.x + sizes.viewBox.width) * sizes.realZoom) + gutterWidth
+        //         , rightLimit = sizes.width - gutterWidth - (sizes.viewBox.x * sizes.realZoom)
+        //         , topLimit = -((sizes.viewBox.y + sizes.viewBox.height) * sizes.realZoom) + gutterHeight
+        //         , bottomLimit = sizes.height - gutterHeight - (sizes.viewBox.y * sizes.realZoom)
+        //
+        //     customPan = {}
+        //     customPan.x = Math.max(leftLimit, Math.min(rightLimit, newPan.x))
+        //     customPan.y = Math.max(topLimit, Math.min(bottomLimit, newPan.y))
+        //
+        //     return customPan
+        // }
+        let panZoomInstance, _w, _h;
+        
+        function doPanZoom([x, w, h]) {
+            try {
+                // console.log(x, w, h)
+                if(x && (!panZoomInstance || _w !== w || _h !== h)){// x.childElementCount > 1) {
+                    // console.log("panzoom", x, x.getAttribute("viewbox"));
+                    _w = w;
+                    _h = h;
+                    if(panZoomInstance)
+                        panZoomInstance.destroy();
+                    x.setAttribute("viewbox", `0 0 ${w} ${h}`)
+                    panZoomInstance = svgPanZoom(x, {
+                        minZoom: 0.5,
+                        maxZoom: 10,
+                        // beforePan: beforePan
+                    });
+                } else {
+                    // console.log("reset", panZoomInstance)
+                    // panZoomInstance.contain();
+                    // panZoomInstance.center();
+                }
+            } catch (e){
+                console.error(e);
+            }
+        }
     </script>
 </head>
 <body>

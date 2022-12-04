@@ -19,6 +19,7 @@
     </Content>
     <Content Include="index.html" />
     <Content Include="scss\main.scss" />
+    <Content Include="svg-pan-zoom.min.js" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Fable.Browser.Dom" Version="2.10.0" />

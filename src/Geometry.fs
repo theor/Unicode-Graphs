@@ -18,6 +18,13 @@ type Rect =
 
     static member Create(x, y, w, h): Rect = { X = x; Y = y; W = w; H = h }
 
+[<Struct>]
+type RectF =
+    { X: float32
+      Y: float32
+      W: float32
+      H: float32 }
+    static member Create(x, y, w, h): RectF = { X = x; Y = y; W = w; H = h }
 module Rect =
     let contains (x, y) (r: Rect) =
         x >= r.X

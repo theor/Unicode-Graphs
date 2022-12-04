@@ -256,8 +256,11 @@ let view (model: Model) dispatch =
                     Column.column [] [
                         yield! templateGallery dispatch
                         yield (GraphRender.renderEditable "main" dispatch model)
+                        yield div [] [
+                            yield GraphRender.renderHtml model
+                        ]
                     ]
-                    Column.column [] [
+                    Column.column [ Column.Width (Screen.All, Column.Is4)  ] [
                         EditorView.view model dispatch
                         Message.message [] [
                             Message.header [] [ str "How to use" ]

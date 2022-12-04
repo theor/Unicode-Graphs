@@ -19,13 +19,13 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 5.0.x
+        dotnet-version: 6.0.x
     - name: Restore .net dependencies
       run: dotnet tool restore
     - name: Restore js dependencies
       run: yarn
     - name: Build
-      run: npm run build
+      run: yarn run build
     - name: Install netlify
       run: npm install -g netlify-cli
     - name: Deploy to netlify

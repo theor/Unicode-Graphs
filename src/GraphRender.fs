@@ -2,6 +2,7 @@ module App.GraphRender
 
 open System
 open System.Text
+open Browser
 open Fable.Core
 open Fable.React
 open Fable.React.Props
@@ -11,7 +12,7 @@ open App.Graph
 open App.Types
 
 let emptyChar = ' '
-let portChar = "\u25CC"
+let portChar = "\u2022"
 let portChar2 = '\u25CF'
 
 [<RequireQualifiedAccess>]
@@ -396,3 +397,84 @@ let render key editable dispatch (model: Model) =
          })
 let renderReadOnly key (model: Model) = render key false (fun _ -> ()) model
 let renderEditable key dispatch (model: Model) = render key true dispatch model
+
+let [<Global>] doPanZoom: Element * float32 * float32 -> unit = jsNative
+
+let constant x = fun _ -> x
+let FX = 0.5f
+
+let renderSvgEdge (model:Model) (e:Edge) =
+    let getPortId (d:Direction) ((n,i):Id * uint8) : Id =
+        let l = if d = Direction.Input then model.graph.nodes[n].inputs else model.graph.nodes[n].outputs
+        l[int i].id
+    let portPos pid =
+        let x,y = model.ports[pid].position
+        let n = model.graph.nodes[model.ports[pid].ownerNode]
+        float32 x, y //+ if GraphLayout.hasTitle n then 1 else 0
+    let fromPort, toPort = getPortId Direction.Output e.fromNode,
+                           getPortId Direction.Input e.toNode
+    let (fx, fy), (tx, ty) = portPos fromPort , portPos toPort
+    let mx, my = float32(fx-2f+tx) / 2.0f * FX, float32(fy+ty) / 2.0f;
+    // text [] [str $"{fromPort} {fPos} {toPort} {toPos}"]
+    path [ClassName "edge"; SVGAttr.D $"M {FX * (float32 fx-2f)} {float32 fy-0.5f} H {mx} V {float32 ty-0.5f} L {tx*FX} {float32 ty-0.5f}"] []
+let renderSvgNode (model:Model) (n:Node) =
+    let headerSize = if GraphLayout.hasTitle n then 1 else 0
+    let size = model.nodeSizes[n.id] |> (fun r -> RectF.Create(float32 r.X * FX, float32 r.Y, float32 (r.W - 2) * FX, (float32 r.H - 2f)))
+    
+    let renderPort (d:Direction) x cx (i:int) (p:Port) =
+        // let pos = model.ports[p.id].position;
+        let connected = model.graph.edges.Values |> Seq.exists (fun e -> if d = Direction.Input then e.toNode = (n.id, uint8 i) else e.fromNode  = (n.id, uint8 i))
+        [
+            
+            text [ClassName (string d); SVGAttr.Y (float32 i + 0.5f + float32 headerSize); SVGAttr.X (x p)] [str $"{p.title}"]
+            // circle [ClassName "port"; SVGAttr.Cy (float32 i + 0.5f + float32 headerSize); SVGAttr.Cx cx] []
+            circle [classList ["port", true;"connected", connected]; SVGAttr.Cy (float32 i + 0.5f + float32 headerSize); SVGAttr.Cx cx] []
+        ]
+        
+        
+    let headerOffset = float32 headerSize / 2f
+    g [ ClassName "node"; SVGAttr.Transform $"translate({size.X} {size.Y - headerOffset})"] [
+        if GraphLayout.hasTitle n then
+            yield g [ClassName "header"] [
+                rect [SVGAttr.Width size.W; SVGAttr.Height 1.5f; ] []
+                text [SVGAttr.X 0.45f; SVGAttr.Y 0.75f] [str n.title]
+            ]
+        yield rect [ClassName "border"; SVGAttr.Width size.W; SVGAttr.Height (size.H + float32 headerOffset)] []
+        yield rect [ClassName "accent"; SVGAttr.Width size.W] []
+        yield g [SVGAttr.Transform $"translate(0 {headerOffset})"] [
+            yield! n.inputs |> Seq.mapi (renderPort Direction.Input (constant 0.5f) 0) |> Seq.concat
+            yield! n.outputs |> Seq.mapi (renderPort Direction.Output (fun p -> float32 size.W - 0.5f ) (float32 size.W)) |> Seq.concat
+        ]
+
+    ]
+let renderHtml (model:Model) =
+    let renderPort (p:Port) =
+        span [] [
+            // Fulma.Icon.icon [] []
+            str p.title
+        ]
+    let renderNode (n:Node) =
+        let FX =2
+        let FY =int32 <| 24f*1.2f
+        let size = model.nodeSizes[n.id]
+        div [ ClassName "node"
+              Style [ CSSProp.Top (( size.Y) * FY); CSSProp.Left (size.X * FX); Width (size.W * FX); Height ((size.H - 2) * FY) ]
+        ] [
+            if GraphLayout.hasTitle n then yield span [ClassName "header"] [ str <| $"{n.title}"]
+            yield div [ClassName "port-container"] [
+                div [ ] [ yield! n.inputs |> Seq.map renderPort ]
+                div [ ] [ yield! n.outputs |> Seq.map renderPort]
+            ]
+        ]
+    div [] [
+        // div [ ClassName "html-render" ] [
+        //     yield! model.graph.nodes.Values |> Seq.map renderNode
+        // ]
+        svg [ClassName "svg-render"; ViewBox $"0 0 {FX  * float32 (model.options.ActualCanvasWidth + 1)} {model.options.ActualCanvasHeight}"
+             Ref (fun x -> doPanZoom(x,  FX * float32 model.options.ActualCanvasWidth, float32 model.options.ActualCanvasHeight));  ] [
+            g [ClassName "svg-pan-zoom_viewport"] [
+                yield! model.graph.edges.Values |> Seq.map (renderSvgEdge model)
+                yield! model.graph.nodes.Values |> Seq.map (renderSvgNode model)
+            ]
+        ]
+    ]

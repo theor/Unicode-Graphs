@@ -1,8 +1,20 @@
 @charset "utf-8";
+@font-face {
+  font-family: 'Inconsolata';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(../Inconsolata-Regular.ttf) format('truetype');
+}
+$family-sans-serif: 'Montserrat';
+$family-monospace: 'Inconsolata', monospace;
+$turquoise:    #63a4ff;
 @import "../../node_modules/bulma/bulma.sass";
 
+
 .graph-output {
-  font-family: 'Courier New', monospace;
+  //font-family: 'Roboto Mono', monospace;
   white-space: nowrap;
   display: inline-block;
   & > pre {
@@ -42,4 +54,103 @@
   //  text-align: center;
   //  padding: 0.75rem;
   //}
+}
+
+.svg-render, .html-render {
+  --accent: #1976d2; /*#ffb300;*/
+  --accent-light: #63a4ff; /*#ffe54c;*/
+  --accent-dark: #004ba0; /*#c68400;*/
+  --text-light: #FFF;
+}
+
+.svg-render {
+  border: solid 1px black;
+  height: 50vh;
+  & > g {
+    width: 100%;
+    height: 100%;
+  }
+  width: 100%;
+  Path.edge {
+    stroke-linecap: round;
+    stroke: var(--accent);
+    fill: none;
+    stroke-width: 0.2;
+  }
+  .node {
+    Text {
+      font-size: 0.8px;
+      alignment-baseline: central;
+
+      &.Output {
+        //fill:red;
+        text-anchor: end;
+      }
+    }
+
+    Rect.border {
+      fill: transparent;
+      stroke: var(--accent-dark);
+      stroke-width: 0.1;
+    }
+
+    Rect.accent {
+      fill: var(--accent-dark);
+      height: 0.2px;
+      y: -0.1px;
+    }
+
+    .header {
+      Text {
+        //alignment-baseline: central;
+        //font-size: 1px;
+        fill: white;
+      }
+
+      Rect {
+        fill: var(--accent)
+      }
+    }
+    
+    .port {
+      r: 0.2px;
+      fill: white;//var(--accent-light);
+      stroke: var(--accent);
+      stroke-width: 0.05px;
+      
+    }
+    .port.connected {
+      fill: var(--accent-light);
+    }
+  }
+}
+.html-render {
+  position: relative;
+  font-size: 24px;
+  line-height: 1.2;
+  border: solid 1px black;
+  .node {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    box-sizing: border-box;
+    border: solid 2px var(--accent-dark);
+    border-radius: 2px;
+    .header {
+      color: white;
+      background-color: var(--accent);
+    }
+    .port-container {
+      display: flex;
+      flex-direction: row;
+      div:first-of-type {
+        flex: 1;
+      }
+      div {
+        display: flex;
+        flex-direction: column;
+        
+      }
+    }
+  }
 }
