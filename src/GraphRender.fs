@@ -414,7 +414,7 @@ let renderSvgEdge (model:Model) (e:Edge) =
     let fromPort, toPort = getPortId Direction.Output e.fromNode,
                            getPortId Direction.Input e.toNode
     let (fx, fy), (tx, ty) = portPos fromPort , portPos toPort
-    let mx, my = float32(fx-2f+tx) / 2.0f * FX, float32(fy+ty) / 2.0f;
+    let mx, my = (float32(fx-2f+tx) / 2.0f + float32 e.offset) * FX, float32(fy+ty) / 2.0f;
     // text [] [str $"{fromPort} {fPos} {toPort} {toPos}"]
     path [ClassName "edge"; SVGAttr.D $"M {FX * (float32 fx-2f)} {float32 fy-0.5f} H {mx} V {float32 ty-0.5f} L {tx*FX} {float32 ty-0.5f}"] []
 let renderSvgNode (model:Model) (n:Node) =
@@ -447,6 +447,7 @@ let renderSvgNode (model:Model) (n:Node) =
         ]
 
     ]
+    
 let renderHtml (model:Model) =
     let renderPort (p:Port) =
         span [] [

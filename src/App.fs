@@ -162,7 +162,6 @@ let update (msg: Msg) (model: Model): Model * Cmd<Msg> =
         match model with
         | SelectedNode n -> {model with graph = GraphBuilder(model.graph).UpdateNode({n with outputs = n.outputs @ [GraphBuilder(model.graph).newPort "new"]}).Build()} |> cmdLayout
         | _ -> model, Cmd.none
-    | AddOutput -> model, Cmd.none
     | Delete ->
         match model with
         | SelectedNode n ->
@@ -237,8 +236,12 @@ let update (msg: Msg) (model: Model): Model * Cmd<Msg> =
 
 open Elmish.UrlParser
 
-let route =
-    oneOf [ map Route.Graph (s "graph" </> str)
+let route: State<(Route -> Route)> -> State<Route> list =
+    let star: Parser<(string -> Route), Route> = (fun s ->
+        [{visited = List.concat [s.visited; s.unvisited]; unvisited = []; args = s.args; value = s.value (String.Join("/", s.unvisited))}])
+        
+    
+    oneOf [ map Route.Graph (s "graph" </> star)
             map Route.Home top ]
 
 let urlUpdate (result: Route option) model =
