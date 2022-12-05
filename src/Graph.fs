@@ -107,7 +107,8 @@ type GraphBuilder(g0: Graph) =
         this
 
     member this.RemoveNode(id: Id) =
-        g <- { g with nodes = Map.remove id g.nodes }
+        g <- { g with nodes = Map.remove id g.nodes
+                      edges = Map.filter (fun _ v -> fst v.fromNode <> id && fst v.toNode <> id) g.edges }
         this
 
     member this.RemoveEdge(id: Id) =
