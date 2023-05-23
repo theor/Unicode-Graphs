@@ -71,16 +71,17 @@ $turquoise:    #63a4ff;
     height: 100%;
   }
   width: 100%;
-  Path.edge {
+  path.edge {
     stroke-linecap: round;
     stroke: var(--accent);
     fill: none;
     stroke-width: 0.2;
   }
   .node {
-    Text {
+    text {
       font-size: 0.8px;
       alignment-baseline: central;
+      dominant-baseline: central;
 
       &.Output {
         //fill:red;
@@ -88,26 +89,26 @@ $turquoise:    #63a4ff;
       }
     }
 
-    Rect.border {
+    rect.border {
       fill: transparent;
       stroke: var(--accent-dark);
       stroke-width: 0.1;
     }
 
-    Rect.accent {
+    rect.accent {
       fill: var(--accent-dark);
       height: 0.2px;
       y: -0.1px;
     }
 
     .header {
-      Text {
+      text {
         //alignment-baseline: central;
         //font-size: 1px;
         fill: white;
       }
 
-      Rect {
+      rect {
         fill: var(--accent)
       }
     }
